@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Decoopman">
+<meta name="theme-color" content="#1B3A6B">
+<title>Decoopman Immobilier</title>
+<style>
+:root{--blue:#1B3A6B;--pink:#E91E8C;--blue2:#2d5aad;--gray:#f4f6fb;--border:#e2e8f0;--text:#1a202c;--muted:#64748b;--white:#fff;--green:#16a34a;--orange:#d97706;--red:#dc2626}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--gray);color:var(--text);min-height:100vh;overscroll-behavior:none}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex;flex-direction:column}
+
+/* ── LOGIN / REGISTER ── */
+#screen-login,#screen-register,#screen-forgot{align-items:center;justify-content:center;padding:2rem;background:linear-gradient(160deg,#1B3A6B 0%,#2d5aad 100%)}
+.auth-logo{text-align:center;margin-bottom:2rem}
+.auth-logo svg{width:72px;height:72px}
+.auth-brand{color:#fff;font-size:22px;font-weight:700;margin-top:8px}
+.auth-sub{color:rgba(255,255,255,.6);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.auth-card{background:#fff;border-radius:20px;padding:1.5rem;width:100%;max-width:360px}
+.auth-card h2{font-size:17px;font-weight:700;color:var(--blue);margin-bottom:1.25rem;text-align:center}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600}
+.field input{width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:16px;outline:none;color:var(--text);transition:border .2s;-webkit-appearance:none}
+.field input:focus{border-color:var(--pink)}
+.field input.error{border-color:var(--red)}
+.err-msg{font-size:12px;color:var(--red);margin-top:5px;display:none}
+.err-msg.show{display:block}
+.hint-msg{font-size:12px;color:var(--muted);margin-bottom:1rem;line-height:1.5}
+.btn-primary{width:100%;padding:14px;background:var(--pink);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-top:.25rem}
+.btn-primary:active{opacity:.85}
+.btn-link{background:none;border:none;color:var(--blue);font-size:13px;cursor:pointer;text-align:center;width:100%;margin-top:.75rem;padding:.25rem}
+.auth-badge{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:.6rem 1rem;font-size:12px;color:#15803d;margin-bottom:1rem;text-align:center}
+
+/* ── APP ── */
+#screen-app{background:var(--gray)}
+.topbar{background:var(--blue);padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar-logo{width:28px;height:28px}
+.topbar-brand{color:#fff;font-size:15px;font-weight:700}
+.topbar-user{font-size:11px;color:rgba(255,255,255,.65);margin-top:1px}
+.btn-logout{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
+.tabs{display:flex;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:60px;z-index:40}
+.tab{flex:1;padding:12px 8px;text-align:center;font-size:13px;font-weight:600;color:var(--muted);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s}
+.tab.active{color:var(--pink);border-bottom-color:var(--pink)}
+.page{display:none;padding:1rem;padding-bottom:5rem}
+.page.active{display:block}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1rem}
+.stat-card{background:#fff;border-radius:14px;padding:1rem;border-left:4px solid var(--pink)}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.stat-val{font-size:24px;font-weight:700;color:var(--blue)}
+
+/* ── PIPELINE ── */
+.pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:1rem}
+.pipe-item{background:#fff;border-radius:12px;padding:.6rem .5rem;text-align:center;border-top:3px solid var(--border)}
+.pipe-item-count{font-size:20px;font-weight:700}
+.pipe-item-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+
+/* ── FILTERS ── */
+.filter-bar{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:1rem;scrollbar-width:none}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-chip{flex-shrink:0;padding:6px 14px;border-radius:99px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap}
+.filter-chip.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* ── SEARCH ── */
+.search-box{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;outline:none;background:#fff;margin-bottom:1rem;color:var(--text);-webkit-appearance:none}
+.search-box:focus{border-color:var(--pink)}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:1.5rem;right:1.5rem;width:56px;height:56px;background:var(--pink);border:none;border-radius:50%;color:#fff;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(233,30,140,.4);z-index:60;display:none;align-items:center;justify-content:center}
+.fab.visible{display:flex}
+.fab:active{transform:scale(.95)}
+
+/* ── CARDS ── */
+.item-card{background:#fff;border-radius:16px;padding:1rem;margin-bottom:.75rem;border:1.5px solid var(--border)}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px}
+.badge-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px}
+.card-sub{font-size:12px;color:var(--muted);margin-bottom:10px}
+.card-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.card-field-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.card-field-val{font-size:14px;font-weight:600;color:var(--text)}
+.card-footer{font-size:11px;color:var(--muted);padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.card-actions{display:flex;gap:6px}
+.act-btn{background:var(--gray);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text)}
+.act-btn.danger{background:#fee2e2;color:var(--red)}
+.act-btn:active{opacity:.7}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:#fff;border-radius:24px 24px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:1.25rem 1.25rem 2.5rem}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 1rem}
+.modal-title{font-size:18px;font-weight:700;color:var(--blue);margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:2px solid var(--pink)}
+.modal .field input,.modal .field select,.modal .field textarea{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:16px;outline:none;color:var(--text);background:#fff;font-family:inherit;-webkit-appearance:none}
+.modal .field input:focus,.modal .field select:focus,.modal .field textarea:focus{border-color:var(--pink)}
+.modal .field textarea{min-height:80px;resize:none}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-footer{display:flex;gap:10px;margin-top:1.25rem}
+.btn-cancel{flex:1;padding:14px;background:var(--gray);border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;color:var(--muted)}
+.btn-save{flex:2;padding:14px;background:var(--pink);border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;color:#fff}
+.btn-save:active,.btn-cancel:active{opacity:.8}
+
+/* ── EMPTY ── */
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--muted)}
+.empty-icon{font-size:48px;margin-bottom:.75rem}
+.empty-text{font-size:15px}
+
+/* ── RAPPEL ── */
+.r-urgent{color:var(--red);font-weight:700}
+.r-soon{color:var(--orange);font-weight:600}
+.r-ok{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="screen-login" class="screen active">
+  <div class="auth-logo">
+    <svg viewBox="0 0 72 72" fill="none"><path d="M10 32L36 10L62 32V62H44V44H28V62H10V32Z" stroke="white" stroke-width="4" fill="none"/><path d="M26 40L36 31L46 40V58H26V40Z" fill="#E91E8C"/><rect x="8" y="38" width="10" height="4" rx="2" fill="#E91E8C"/></svg>
+    <div class="auth-brand">Decoopman</div>
+    <div class="auth-sub">Immobilier</div>
+  </div>
+  <div class="auth-card">
+    <h2>Connexion</h2>
+    <div class="field">
+      <label>Prénom</label>
+      <input id="l-nom" type="text" placeholder="Ton prénom" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Mot de passe</label>
+      <input id="l-mdp" type="password" placeholder="••••••••" autocomplete="current-password">
+      <div class="err-msg" id="l-err">Prénom ou mot de passe incorrect.</div>
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Se connecter</button>
+    <button class="btn-link" onclick="showScreen('screen-register')">Première fois ? Créer mon compte →</button>
+  </div>
+</div>
+
+<!-- ═══ REGISTER ═══ -->
+<div id="screen-register" class="screen">
+  <div class="auth-logo">
+    <svg viewBox="0 0 72 72" fill="none"><path d="M10 32L36 10L62 32V62H44V44H28V62H10V32Z" stroke="white" stroke-width="4" fill="none"/><path d="M26 40L36 31L46 40V58H26V40Z" fill="#E91E8C"/><rect x="8" y="38" width="10" height="4" rx="2" fill="#E91E8C"/></svg>
+    <div class="auth-brand">Decoopman</div>
+    <div class="auth-sub">Immobilier</div>
+  </div>
+  <div class="auth-card">
+    <h2>Créer mon compte</h2>
+    <div class="hint-msg">Choisis un prénom et un mot de passe. Tes données seront séparées de tes collègues.</div>
+    <div class="field">
+      <label>Prénom</label>
+      <input id="r-nom" type="text" placeholder="Ex : Morgan" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Mot de passe</label>
+      <input id="r-mdp" type="password" placeholder="Min. 4 caractères" autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label>Confirmer le mot de passe</label>
+      <input id="r-mdp2" type="password" placeholder="Répète le mot de passe" autocomplete="new-password">
+      <div class="err-msg" id="r-err"></div>
+    </div>
+    <button class="btn-primary" onclick="doRegister()">Créer mon compte</button>
+    <button class="btn-link" onclick="showScreen('screen-login')">← Déjà un compte ? Se connecter</button>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="screen-app" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <svg class="topbar-logo" viewBox="0 0 28 28" fill="none"><path d="M3 12L14 3L25 12V25H17V17H11V25H3V12Z" stroke="white" stroke-width="2" fill="none"/><path d="M10 15L14 11.5L18 15V23H10V15Z" fill="#E91E8C"/></svg>
+      <div>
+        <div class="topbar-brand">Decoopman Immo</div>
+        <div class="topbar-user" id="topbar-user"></div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Déconnexion</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('mandats')">🏠 Mandats</button>
+    <button class="tab" onclick="switchTab('prospection')">📋 Prospection</button>
+  </div>
+  <div class="page active" id="page-mandats">
+    <div style="height:.75rem"></div>
+    <div class="stats-row" id="m-stats"></div>
+    <div class="pipeline" id="m-pipeline"></div>
+    <div class="filter-bar" id="m-filters"></div>
+    <div id="m-cards"></div>
+  </div>
+  <div class="page" id="page-prospection">
+    <div style="height:.75rem"></div>
+    <div class="stats-row" id="p-stats"></div>
+    <input class="search-box" type="text" id="p-search" placeholder="🔍 Rechercher un contact…" oninput="renderProspection()">
+    <div class="filter-bar" id="p-filters"></div>
+    <div id="p-cards"></div>
+  </div>
+  <button class="fab" id="fab" onclick="openAddModal()">+</button>
+</div>
+
+<!-- ═══ MODAL MANDAT ═══ -->
+<div class="modal-overlay" id="modal-mandat">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mm-title">Nouveau mandat</div>
+    <div class="field"><label>Adresse du bien</label><input id="mm-adresse" type="text" placeholder="12 rue des Lilas, Béthune"></div>
+    <div class="field-row">
+      <div class="field"><label>Type de bien</label>
+        <select id="mm-type"><option>Appartement</option><option>Maison</option><option>Local commercial</option><option>Terrain</option><option>Immeuble</option></select>
+      </div>
+      <div class="field"><label>Mandat</label>
+        <select id="mm-mandat"><option value="exclusif">Exclusif</option><option value="simple">Simple</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Étape</label>
+      <select id="mm-etape"><option>Mandat</option><option>Visite</option><option>Offre</option><option>Vendu</option></select>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Prix demandé (€)</label><input id="mm-prix" type="number" placeholder="350000"></div>
+      <div class="field"><label>Offre reçue (€)</label><input id="mm-offre" type="number" placeholder="optionnel"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Commission (%)</label><input id="mm-commission" type="number" step="0.1" placeholder="4.5"></div>
+      <div class="field"><label>Nb visites</label><input id="mm-visites" type="number" placeholder="0"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Date d'entrée</label><input id="mm-dentree" type="date"></div>
+      <div class="field"><label>Expiration</label><input id="mm-dexpir" type="date"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-mandat')">Annuler</button>
+      <button class="btn-save" onclick="saveMandat()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL PROSPECTION ═══ -->
+<div class="modal-overlay" id="modal-prospection">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mp-title">Nouveau contact</div>
+    <div class="field"><label>Nom complet</label><input id="mp-nom" type="text" placeholder="Jean Dupont"></div>
+    <div class="field-row">
+      <div class="field"><label>Téléphone</label><input id="mp-tel" type="tel" placeholder="06 00 00 00 00"></div>
+      <div class="field"><label>Email</label><input id="mp-email" type="email" placeholder="optionnel"></div>
+    </div>
+    <div class="field"><label>Adresse du bien</label><input id="mp-addr" type="text" placeholder="12 rue des Lilas, Béthune"></div>
+    <div class="field-row">
+      <div class="field"><label>Type</label>
+        <select id="mp-type"><option>Propriétaire</option><option>Estimation</option><option>Bouche à oreille</option><option>Concurrent</option></select>
+      </div>
+      <div class="field"><label>Statut</label>
+        <select id="mp-stat"><option>À appeler</option><option>En cours</option><option>Intéressé</option><option>Pas prêt</option><option>Refus</option><option>Gagné</option><option>Perdu</option></select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>1er contact</label><input id="mp-cont" type="date"></div>
+      <div class="field"><label>Rappel</label><input id="mp-rapp" type="date"></div>
+    </div>
+    <div class="field"><label>Résultat de l'échange</label>
+      <select id="mp-result">
+        <option value="">— Sélectionner —</option>
+        <option>Intéressé, à rappeler</option>
+        <option>Pas prêt, dans 6 mois</option>
+        <option>Refus catégorique</option>
+        <option>Estimation demandée</option>
+        <option>Mandat signé</option>
+        <option>Déjà avec un concurrent</option>
+      </select>
+    </div>
+    <div class="field"><label>Notes libres</label><textarea id="mp-notes" placeholder="Contexte, suite à donner…"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-prospection')">Annuler</button>
+      <button class="btn-save" onclick="saveContact()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══ AUTH ═══
+let currentUser = null;
+
+function getUsers(){ try{return JSON.parse(localStorage.getItem('deco_users')||'{}')}catch(e){return{}} }
+function saveUsers(u){ localStorage.setItem('deco_users',JSON.stringify(u)) }
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  clearErrors();
+}
+function clearErrors(){
+  document.querySelectorAll('.err-msg').forEach(e=>{e.classList.remove('show');e.textContent=''});
+  document.querySelectorAll('.field input').forEach(i=>i.classList.remove('error'));
+}
+
+function doLogin(){
+  const nom = document.getElementById('l-nom').value.trim().toLowerCase();
+  const mdp = document.getElementById('l-mdp').value;
+  const users = getUsers();
+  const err = document.getElementById('l-err');
+  if(!nom||!mdp){err.textContent='Remplis tous les champs.';err.classList.add('show');return;}
+  if(!users[nom]||users[nom].mdp!==btoa(mdp)){
+    err.classList.add('show');
+    document.getElementById('l-nom').classList.add('error');
+    document.getElementById('l-mdp').classList.add('error');
+    return;
+  }
+  currentUser = nom;
+  localStorage.setItem('deco_session', nom);
+  document.getElementById('topbar-user').textContent = users[nom].prenom;
+  document.getElementById('l-mdp').value='';
+  showScreen('screen-app');
+  document.getElementById('fab').classList.add('visible');
+  renderMandats(); renderProspection();
+}
+
+function doRegister(){
+  const nom = document.getElementById('r-nom').value.trim().toLowerCase();
+  const prenom = document.getElementById('r-nom').value.trim();
+  const mdp = document.getElementById('r-mdp').value;
+  const mdp2 = document.getElementById('r-mdp2').value;
+  const err = document.getElementById('r-err');
+  if(!nom||!mdp||!mdp2){err.textContent='Remplis tous les champs.';err.classList.add('show');return;}
+  if(mdp.length<4){err.textContent='Le mot de passe doit faire au moins 4 caractères.';err.classList.add('show');return;}
+  if(mdp!==mdp2){err.textContent='Les mots de passe ne correspondent pas.';err.classList.add('show');document.getElementById('r-mdp2').classList.add('error');return;}
+  const users=getUsers();
+  if(users[nom]){err.textContent='Ce prénom est déjà utilisé. Choisis un autre ou connecte-toi.';err.classList.add('show');document.getElementById('r-nom').classList.add('error');return;}
+  users[nom]={prenom,mdp:btoa(mdp)};
+  saveUsers(users);
+  currentUser=nom;
+  localStorage.setItem('deco_session',nom);
+  document.getElementById('topbar-user').textContent=prenom;
+  document.getElementById('r-mdp').value='';document.getElementById('r-mdp2').value='';
+  showScreen('screen-app');
+  document.getElementById('fab').classList.add('visible');
+  renderMandats();renderProspection();
+}
+
+function doLogout(){
+  currentUser=null;
+  localStorage.removeItem('deco_session');
+  document.getElementById('fab').classList.remove('visible');
+  document.getElementById('l-nom').value='';
+  showScreen('screen-login');
+}
+
+// Auto-login
+window.addEventListener('load',()=>{
+  const s=localStorage.getItem('deco_session');
+  const users=getUsers();
+  if(s&&users[s]){
+    currentUser=s;
+    document.getElementById('topbar-user').textContent=users[s].prenom;
+    showScreen('screen-app');
+    document.getElementById('fab').classList.add('visible');
+    renderMandats();renderProspection();
+  }
+  // Enter key
+  ['l-nom','l-mdp'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()}));
+  ['r-nom','r-mdp','r-mdp2'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doRegister()}));
+});
+
+// ═══ STORAGE ═══
+const ukey = k=>`deco_${currentUser}_${k}`;
+const usave = (k,v)=>localStorage.setItem(ukey(k),JSON.stringify(v));
+const uload = (k,def)=>{try{const v=localStorage.getItem(ukey(k));return v?JSON.parse(v):def}catch(e){return def}};
+
+// ═══ TABS ═══
+let currentTab='mandats';
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['mandats','prospection'][i]===tab));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+}
+
+// ═══ UTILS ═══
+const fmt=n=>n?n.toLocaleString('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}):'—';
+const fmtd=d=>{if(!d)return'—';const[y,m,j]=d.split('-');return`${j}/${m}/${y}`};
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+const daysFrom=d=>{if(!d)return null;const dd=new Date(d);dd.setHours(0,0,0,0);return Math.ceil((dd-today())/86400000)};
+
+// ═══ MANDATS ═══
+const ETAPES=['Mandat','Visite','Offre','Vendu'];
+const ECOLS={Mandat:{dot:'#2d5aad',bg:'#e8eef7',tx:'#1B3A6B'},Visite:{dot:'#E91E8C',bg:'#fce4f3',tx:'#9c0f60'},Offre:{dot:'#d97706',bg:'#fef3c7',tx:'#92400e'},Vendu:{dot:'#16a34a',bg:'#dcfce7',tx:'#14532d'}};
+let mEditId=null,mFilter='Tous';
+const comm=b=>(b.offre||b.prix)*(b.commission/100);
+const getMandats=()=>uload('mandats',[]);
+const saveMandats=d=>usave('mandats',d);
+
+function renderMandats(){
+  const data=getMandats();
+  const totalComm=data.reduce((s,b)=>s+comm(b),0);
+  document.getElementById('m-stats').innerHTML=[
+    {l:'Total mandats',v:data.length,c:'var(--blue)'},
+    {l:'Commissions',v:fmt(totalComm),c:'var(--pink)'},
+    {l:'En cours',v:data.filter(b=>b.etape!=='Vendu').length,c:'var(--blue)'},
+    {l:'Ventes signées',v:data.filter(b=>b.etape==='Vendu').length,c:'var(--green)'},
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.l}</div><div class="stat-val" style="color:${s.c}">${s.v}</div></div>`).join('');
+  document.getElementById('m-pipeline').innerHTML=ETAPES.map(e=>{
+    const c=ECOLS[e],count=data.filter(b=>b.etape===e).length;
+    return`<div class="pipe-item" style="border-top-color:${c.dot}"><div class="pipe-item-count" style="color:${c.dot}">${count}</div><div class="pipe-item-label">${e}</div></div>`;
+  }).join('');
+  document.getElementById('m-filters').innerHTML=['Tous',...ETAPES].map(e=>`<button class="filter-chip${mFilter===e?' active':''}" onclick="setMFilter('${e}')">${e}${e!=='Tous'?' ('+data.filter(b=>b.etape===e).length+')':''}</button>`).join('');
+  const rows=mFilter==='Tous'?data:data.filter(b=>b.etape===mFilter);
+  const el=document.getElementById('m-cards');
+  if(!rows.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">🏠</div><div class="empty-text">Aucun mandat${mFilter!=='Tous'?' dans cette étape':''}<br><span style="font-size:13px">Appuie sur + pour en ajouter un</span></div></div>`;return}
+  el.innerHTML=rows.map(b=>{
+    const c=ECOLS[b.etape],j=daysFrom(b.dexpir);
+    const jcol=j===null?'var(--muted)':j<0?'var(--red)':j<=30?'var(--orange)':'var(--muted)';
+    const jlbl=j===null?'—':j<0?'Expiré ⚠':j===0?"Aujourd'hui !":j===1?'Demain':`Dans ${j}j${j<=30?' ⚠':''}`;
+    return`<div class="item-card">
+      <div class="card-header">
+        <span class="badge" style="background:${c.bg};color:${c.tx}"><span class="badge-dot" style="background:${c.dot}"></span>${b.etape}</span>
+        <span style="font-size:11px;color:${b.mandat==='exclusif'?'var(--pink)':'var(--muted)'};font-weight:600">Mandat ${b.mandat}</span>
+      </div>
+      <div class="card-title">${b.adresse}</div>
+      <div class="card-sub">${b.type}</div>
+      <div class="card-row">
+        <div><div class="card-field-label">Prix demandé</div><div class="card-field-val">${fmt(b.prix)}</div></div>
+        <div><div class="card-field-label">Offre reçue</div><div class="card-field-val" style="color:${b.offre?'var(--green)':'var(--muted)'}">${fmt(b.offre)}</div></div>
+        <div><div class="card-field-label">Commission ${b.commission}%</div><div class="card-field-val" style="color:var(--pink)">${fmt(comm(b))}</div></div>
+        <div><div class="card-field-label">Expiration</div><div class="card-field-val" style="color:${jcol};font-size:13px">${jlbl}</div></div>
+      </div>
+      <div class="card-footer">
+        <span>${b.visites||0} visite${b.visites>1?'s':''} · Entrée ${fmtd(b.dentree)}</span>
+        <div class="card-actions">
+          <button class="act-btn" onclick="editMandat('${b.id}')">Modifier</button>
+          <button class="act-btn danger" onclick="delMandat('${b.id}')">Suppr.</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function setMFilter(f){mFilter=f;renderMandats()}
+function openAddModal(){if(currentTab==='mandats')openMandatModal();else openContactModal()}
+function openMandatModal(b=null){
+  mEditId=b?b.id:null;
+  document.getElementById('mm-title').textContent=b?'Modifier le mandat':'Nouveau mandat';
+  document.getElementById('mm-adresse').value=b?.adresse||'';
+  document.getElementById('mm-type').value=b?.type||'Appartement';
+  document.getElementById('mm-mandat').value=b?.mandat||'exclusif';
+  document.getElementById('mm-etape').value=b?.etape||'Mandat';
+  document.getElementById('mm-prix').value=b?.prix||'';
+  document.getElementById('mm-offre').value=b?.offre||'';
+  document.getElementById('mm-commission').value=b?.commission||'';
+  document.getElementById('mm-visites').value=b?.visites||0;
+  document.getElementById('mm-dentree').value=b?.dentree||'';
+  document.getElementById('mm-dexpir').value=b?.dexpir||'';
+  document.getElementById('modal-mandat').classList.add('open');
+}
+function editMandat(id){const b=getMandats().find(x=>x.id===id);if(b)openMandatModal(b)}
+function delMandat(id){if(!confirm('Supprimer ce mandat ?'))return;saveMandats(getMandats().filter(b=>b.id!==id));renderMandats()}
+function saveMandat(){
+  const adresse=document.getElementById('mm-adresse').value.trim();
+  if(!adresse)return alert("L'adresse est obligatoire.");
+  const entry={id:mEditId||Date.now().toString(),adresse,type:document.getElementById('mm-type').value,mandat:document.getElementById('mm-mandat').value,etape:document.getElementById('mm-etape').value,prix:Number(document.getElementById('mm-prix').value)||0,offre:document.getElementById('mm-offre').value?Number(document.getElementById('mm-offre').value):null,commission:Number(document.getElementById('mm-commission').value)||0,visites:Number(document.getElementById('mm-visites').value)||0,dentree:document.getElementById('mm-dentree').value,dexpir:document.getElementById('mm-dexpir').value};
+  const data=getMandats();
+  if(mEditId)saveMandats(data.map(b=>b.id===mEditId?entry:b));else saveMandats([...data,entry]);
+  closeModal('modal-mandat');renderMandats();
+}
+
+// ═══ PROSPECTION ═══
+const TC={Propriétaire:{bg:'#e8eef7',tx:'#1B3A6B'},Estimation:{bg:'#fce4f3',tx:'#9c0f60'},'Bouche à oreille':{bg:'#dcfce7',tx:'#14532d'},Concurrent:{bg:'#fef3c7',tx:'#92400e'}};
+const SC={'À appeler':{bg:'#fef3c7',tx:'#92400e'},'En cours':{bg:'#e8eef7',tx:'#1B3A6B'},'Intéressé':{bg:'#dcfce7',tx:'#14532d'},'Pas prêt':{bg:'#f1f5f9',tx:'#64748b'},'Refus':{bg:'#fee2e2',tx:'#991b1b'},'Gagné':{bg:'#fce4f3',tx:'#9c0f60'},'Perdu':{bg:'#fee2e2',tx:'#991b1b'}};
+let pEditId=null,pFilter='Tous';
+const getContacts=()=>uload('contacts',[]);
+const saveContacts=d=>usave('contacts',d);
+const rappelLbl=d=>{const n=daysFrom(d);if(n===null)return{lbl:'—',cls:''};if(n<0)return{lbl:fmtd(d)+' ⚠',cls:'r-urgent'};if(n===0)return{lbl:"Aujourd'hui !",cls:'r-urgent'};if(n===1)return{lbl:'Demain',cls:'r-soon'};if(n<=7)return{lbl:`${fmtd(d)} (${n}j)`,cls:'r-soon'};return{lbl:fmtd(d),cls:'r-ok'}};
+
+function renderProspection(){
+  const data=getContacts();
+  const q=document.getElementById('p-search')?.value?.toLowerCase()||'';
+  const urg=data.filter(c=>{const n=daysFrom(c.rapp);return n!==null&&n>=0&&n<=3}).length;
+  document.getElementById('p-stats').innerHTML=[
+    {l:'Total contacts',v:data.length,c:'var(--blue)'},
+    {l:'Rappels urgents',v:urg,c:urg>0?'var(--red)':'var(--blue)'},
+    {l:'Intéressés',v:data.filter(c=>c.stat==='Intéressé').length,c:'var(--blue)'},
+    {l:'Gagnés',v:data.filter(c=>c.stat==='Gagné').length,c:'var(--pink)'},
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.l}</div><div class="stat-val" style="color:${s.c}">${s.v}</div></div>`).join('');
+  const statuts=['Tous','À appeler','En cours','Intéressé','Pas prêt','Refus','Gagné','Perdu'];
+  document.getElementById('p-filters').innerHTML=statuts.map(s=>`<button class="filter-chip${pFilter===s?' active':''}" onclick="setPFilter('${s}')">${s}</button>`).join('');
+  let rows=data;
+  if(pFilter!=='Tous')rows=rows.filter(c=>c.stat===pFilter);
+  if(q)rows=rows.filter(c=>`${c.nom}${c.addr}${c.notes}`.toLowerCase().includes(q));
+  const el=document.getElementById('p-cards');
+  if(!rows.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Aucun contact trouvé<br><span style="font-size:13px">Appuie sur + pour en ajouter un</span></div></div>`;return}
+  el.innerHTML=rows.map(c=>{
+    const tc=TC[c.type]||{bg:'#f1f5f9',tx:'#64748b'};
+    const sc=SC[c.stat]||{bg:'#f1f5f9',tx:'#64748b'};
+    const r=rappelLbl(c.rapp);
+    return`<div class="item-card">
+      <div class="card-header">
+        <span class="badge" style="background:${tc.bg};color:${tc.tx}">${c.type}</span>
+        <span class="badge" style="background:${sc.bg};color:${sc.tx}">${c.stat}</span>
+      </div>
+      <div class="card-title">${c.nom}</div>
+      <div class="card-sub">${c.tel||''}${c.tel&&c.addr?' · ':''}${c.addr||''}</div>
+      <div class="card-row">
+        <div><div class="card-field-label">1er contact</div><div class="card-field-val" style="font-size:13px">${fmtd(c.cont)}</div></div>
+        <div><div class="card-field-label">Rappel</div><div class="card-field-val ${r.cls}" style="font-size:13px">${r.lbl}</div></div>
+      </div>
+      ${c.result?`<div style="font-size:12px;color:var(--blue);font-weight:600;margin-bottom:4px">${c.result}</div>`:''}
+      ${c.notes?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px">${c.notes}</div>`:''}
+      <div class="card-footer"><span></span>
+        <div class="card-actions">
+          <button class="act-btn" onclick="editContact('${c.id}')">Modifier</button>
+          <button class="act-btn danger" onclick="delContact('${c.id}')">Suppr.</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function setPFilter(f){pFilter=f;renderProspection()}
+function openContactModal(c=null){
+  pEditId=c?c.id:null;
+  document.getElementById('mp-title').textContent=c?'Modifier le contact':'Nouveau contact';
+  document.getElementById('mp-nom').value=c?.nom||'';
+  document.getElementById('mp-tel').value=c?.tel||'';
+  document.getElementById('mp-email').value=c?.email||'';
+  document.getElementById('mp-addr').value=c?.addr||'';
+  document.getElementById('mp-type').value=c?.type||'Propriétaire';
+  document.getElementById('mp-stat').value=c?.stat||'À appeler';
+  document.getElementById('mp-cont').value=c?.cont||'';
+  document.getElementById('mp-rapp').value=c?.rapp||'';
+  document.getElementById('mp-result').value=c?.result||'';
+  document.getElementById('mp-notes').value=c?.notes||'';
+  document.getElementById('modal-prospection').classList.add('open');
+}
+function editContact(id){const c=getContacts().find(x=>x.id===id);if(c)openContactModal(c)}
+function delContact(id){if(!confirm('Supprimer ce contact ?'))return;saveContacts(getContacts().filter(c=>c.id!==id));renderProspection()}
+function saveContact(){
+  const nom=document.getElementById('mp-nom').value.trim();
+  if(!nom)return alert('Le nom est obligatoire.');
+  const entry={id:pEditId||Date.now().toString(),nom,tel:document.getElementById('mp-tel').value.trim(),email:document.getElementById('mp-email').value.trim(),addr:document.getElementById('mp-addr').value.trim(),type:document.getElementById('mp-type').value,stat:document.getElementById('mp-stat').value,cont:document.getElementById('mp-cont').value,rapp:document.getElementById('mp-rapp').value,result:document.getElementById('mp-result').value,notes:document.getElementById('mp-notes').value.trim()};
+  const data=getContacts();
+  if(pEditId)saveContacts(data.map(c=>c.id===pEditId?entry:c));else saveContacts([...data,entry]);
+  closeModal('modal-prospection');renderProspection();
+}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+</script>
+</body>
+</html>
