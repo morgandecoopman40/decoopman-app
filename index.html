@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Decoopman">
+<meta name="theme-color" content="#1B3A6B">
+<title>Decoopman Immobilier</title>
+<style>
+:root{--blue:#1B3A6B;--pink:#E91E8C;--blue2:#2d5aad;--gray:#f4f6fb;--border:#e2e8f0;--text:#1a202c;--muted:#64748b;--white:#fff;--green:#16a34a;--orange:#d97706;--red:#dc2626}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--gray);color:var(--text);min-height:100vh;overscroll-behavior:none}
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex;flex-direction:column}
+#screen-login,#screen-register{align-items:center;justify-content:center;padding:2rem;background:linear-gradient(160deg,#1B3A6B 0%,#2d5aad 100%)}
+.auth-logo{text-align:center;margin-bottom:2rem}
+.auth-logo svg{width:72px;height:72px}
+.auth-brand{color:#fff;font-size:22px;font-weight:700;margin-top:8px}
+.auth-sub{color:rgba(255,255,255,.6);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.auth-card{background:#fff;border-radius:20px;padding:1.5rem;width:100%;max-width:360px}
+.auth-card h2{font-size:17px;font-weight:700;color:var(--blue);margin-bottom:1.25rem;text-align:center}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600}
+.field input,.field select,.field textarea{width:100%;padding:13px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:16px;outline:none;color:var(--text);transition:border .2s;-webkit-appearance:none;background:#fff;font-family:inherit}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--pink)}
+.field input.error{border-color:var(--red)}
+.field textarea{min-height:70px;resize:none}
+.err-msg{font-size:12px;color:var(--red);margin-top:5px;display:none}
+.err-msg.show{display:block}
+.hint-msg{font-size:12px;color:var(--muted);margin-bottom:1rem;line-height:1.5}
+.btn-primary{width:100%;padding:14px;background:var(--pink);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer}
+.btn-primary:active{opacity:.85}
+.btn-link{background:none;border:none;color:var(--blue);font-size:13px;cursor:pointer;text-align:center;width:100%;margin-top:.75rem;padding:.25rem}
+.topbar{background:var(--blue);padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar-logo{width:28px;height:28px}
+.topbar-brand{color:#fff;font-size:15px;font-weight:700}
+.topbar-user{font-size:11px;color:rgba(255,255,255,.65);margin-top:1px}
+.btn-logout{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
+.tabs{display:flex;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:60px;z-index:40;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:11px 10px;text-align:center;font-size:12px;font-weight:600;color:var(--muted);border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+.tab.active{color:var(--pink);border-bottom-color:var(--pink)}
+.page{display:none;padding:1rem;padding-bottom:5rem}
+.page.active{display:block}
+.stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1rem}
+.stat-card{background:#fff;border-radius:14px;padding:1rem;border-left:4px solid var(--pink)}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.stat-val{font-size:22px;font-weight:700;color:var(--blue)}
+.pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:1rem}
+.pipe-item{background:#fff;border-radius:12px;padding:.6rem .4rem;text-align:center;border-top:3px solid var(--border)}
+.pipe-count{font-size:18px;font-weight:700}
+.pipe-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+.filter-bar{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:1rem;scrollbar-width:none}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-chip{flex-shrink:0;padding:6px 14px;border-radius:99px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap}
+.filter-chip.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.search-box{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:12px;font-size:15px;outline:none;background:#fff;margin-bottom:1rem;color:var(--text);-webkit-appearance:none}
+.search-box:focus{border-color:var(--pink)}
+.fab{position:fixed;bottom:1.5rem;right:1.5rem;width:56px;height:56px;background:var(--pink);border:none;border-radius:50%;color:#fff;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(233,30,140,.4);z-index:60;display:none;align-items:center;justify-content:center}
+.fab.visible{display:flex}
+.fab:active{transform:scale(.95)}
+.item-card{background:#fff;border-radius:16px;padding:1rem;margin-bottom:.75rem;border:1.5px solid var(--border)}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:6px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px}
+.badge-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.card-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px}
+.card-sub{font-size:12px;color:var(--muted);margin-bottom:10px}
+.card-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.card-field-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.card-field-val{font-size:14px;font-weight:600;color:var(--text)}
+.card-footer{font-size:11px;color:var(--muted);padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+.card-actions{display:flex;gap:6px}
+.act-btn{background:var(--gray);border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text)}
+.act-btn.danger{background:#fee2e2;color:var(--red)}
+.act-btn.success{background:#dcfce7;color:var(--green)}
+.act-btn:active{opacity:.7}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:#fff;border-radius:24px 24px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding:1.25rem 1.25rem 2.5rem}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 1rem}
+.modal-title{font-size:18px;font-weight:700;color:var(--blue);margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:2px solid var(--pink)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-footer{display:flex;gap:10px;margin-top:1.25rem}
+.btn-cancel{flex:1;padding:14px;background:var(--gray);border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;color:var(--muted)}
+.btn-save{flex:2;padding:14px;background:var(--pink);border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;color:#fff}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--muted)}
+.empty-icon{font-size:48px;margin-bottom:.75rem}
+.empty-text{font-size:15px}
+.r-urgent{color:var(--red);font-weight:700}
+.r-soon{color:var(--orange);font-weight:600}
+.r-ok{color:var(--muted)}
+/* ADMIN */
+.admin-selector{background:#fff;border-radius:14px;padding:1rem;margin-bottom:1rem;border:1.5px solid var(--pink)}
+.admin-selector label{font-size:12px;color:var(--pink);font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:8px}
+.admin-selector select{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;color:var(--text);background:#fff;-webkit-appearance:none;outline:none}
+/* TODAY */
+.today-card{background:#fff;border-radius:14px;padding:.85rem 1rem;margin-bottom:.6rem;border:1.5px solid var(--border);display:flex;align-items:center;gap:10px}
+.today-card.urgent{border-color:#fca5a5;background:#fff5f5}
+.today-card.warn{border-color:#fcd34d;background:#fffbeb}
+.today-icon{font-size:20px;flex-shrink:0}
+.today-main{font-size:13px;font-weight:600;color:var(--text)}
+.today-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.section-title{font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.6rem;margin-top:1rem}
+/* TIMER */
+.timer-card{background:#fff;border-radius:20px;padding:1.5rem;margin-bottom:1rem;text-align:center;border:1.5px solid var(--border)}
+.timer-display{font-size:52px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;letter-spacing:2px;margin:.75rem 0}
+.timer-btns{display:flex;justify-content:center;gap:10px;margin-bottom:1rem}
+.timer-btn{padding:12px 24px;border:none;border-radius:99px;font-size:15px;font-weight:700;cursor:pointer}
+.timer-btn.start{background:var(--green);color:#fff}
+.timer-btn.stop{background:var(--red);color:#fff}
+.timer-btn.pause{background:var(--orange);color:#fff}
+.timer-btn:active{opacity:.8}
+.session-item{background:#fff;border-radius:12px;padding:.75rem 1rem;margin-bottom:.5rem;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.session-dur{font-size:15px;font-weight:700;color:var(--blue)}
+.week-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+.week-stat{background:#fff;border-radius:12px;padding:.75rem;text-align:center;border:1px solid var(--border)}
+.week-stat-val{font-size:18px;font-weight:700;color:var(--pink)}
+.week-stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-top:3px}
+/* VENTES */
+.vente-card{background:#fff;border-radius:16px;padding:1rem;margin-bottom:.75rem;border:1.5px solid var(--border)}
+.vente-progress{display:flex;align-items:center;gap:0;margin:.75rem 0;overflow-x:auto;padding-bottom:4px}
+.vente-step{display:flex;flex-direction:column;align-items:center;min-width:60px}
+.vente-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.vente-step-label{font-size:9px;color:var(--muted);text-align:center;margin-top:4px;max-width:55px;line-height:1.2}
+.vente-line{height:3px;flex:1;min-width:12px;margin-top:-16px}
+/* TOGGLE */
+.toggle-row{display:flex;gap:0;margin-bottom:1rem;border:1.5px solid var(--border);border-radius:12px;overflow:hidden}
+.toggle-btn{flex:1;padding:10px;border:none;background:#fff;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted)}
+.toggle-btn.active{background:var(--blue);color:#fff}
+/* OBJECTIFS */
+.obj-tabs{display:flex;background:#fff;border-radius:12px;border:1.5px solid var(--border);overflow:hidden;margin-bottom:1rem}
+.obj-tab{flex:1;padding:10px;border:none;background:transparent;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.obj-tab.active{background:var(--blue);color:#fff}
+.obj-card{background:#fff;border-radius:16px;padding:1rem;margin-bottom:.75rem;border:1.5px solid var(--border)}
+.obj-card:hover{border-color:var(--pink)}
+.obj-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.obj-meta{font-size:12px;color:var(--muted);margin-bottom:.75rem}
+.obj-bar-wrap{height:10px;background:var(--gray);border-radius:99px;overflow:hidden;margin-bottom:6px}
+.obj-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--pink),#ff6eb4);transition:width .4s}
+.obj-bar-fill.done{background:linear-gradient(90deg,var(--green),#4ade80)}
+.obj-nums{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.add-inline-btn{width:100%;padding:14px;background:#fff;border:2px dashed var(--border);border-radius:14px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;margin-top:.5rem}
+.add-inline-btn:active{background:var(--gray)}
+/* TODO */
+.todo-item{background:#fff;border-radius:14px;padding:.85rem 1rem;margin-bottom:.6rem;border:1.5px solid var(--border);display:flex;align-items:flex-start;gap:10px}
+.todo-item.done-item{opacity:.55}
+.todo-check{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;margin-top:1px}
+.todo-check.checked{background:var(--green);border-color:var(--green);color:#fff}
+.todo-body{flex:1}
+.todo-text{font-size:14px;font-weight:600;color:var(--text)}
+.todo-text.done-text{text-decoration:line-through;color:var(--muted)}
+.todo-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;align-items:center}
+.todo-del{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px;flex-shrink:0}
+.prio-haute{background:#fee2e2;color:#991b1b}
+.prio-moyenne{background:#fef3c7;color:#92400e}
+.prio-basse{background:#dcfce7;color:#14532d}
+.cat-badge{background:var(--gray);color:var(--muted);font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px}
+/* COMMISSIONS */
+.comm-bar{display:flex;align-items:flex-end;gap:6px;height:120px;padding:0 4px;margin:1rem 0}
+.comm-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.comm-bar-fill{width:100%;background:linear-gradient(180deg,var(--pink),#c01875);border-radius:6px 6px 0 0;min-height:4px;transition:height .5s}
+.comm-bar-label{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:600}
+.comm-bar-val{font-size:10px;color:var(--blue);font-weight:700}
+.comm-row{background:#fff;border-radius:12px;padding:.85rem 1rem;margin-bottom:.5rem;border:1.5px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.comm-row-status{font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px}
+/* BADGES */
+.level-card{background:linear-gradient(135deg,#fbbf24,#f59e0b);border-radius:16px;padding:1.25rem;margin-bottom:1rem;color:#fff;text-align:center}
+.level-num{font-size:48px;font-weight:700;line-height:1;margin-bottom:6px}
+.level-title{font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.level-xp{font-size:13px;opacity:.9;margin-top:6px}
+.level-bar{height:8px;background:rgba(255,255,255,.3);border-radius:99px;overflow:hidden;margin-top:10px}
+.level-bar-fill{height:100%;background:#fff;border-radius:99px;transition:width .5s}
+.badge-card{background:#fff;border-radius:14px;padding:1rem;border:1.5px solid var(--border);text-align:center;position:relative}
+.badge-card.unlocked{border-color:#fbbf24;background:linear-gradient(135deg,#fffbeb,#fef3c7)}
+.badge-card.locked{opacity:.5}
+.badge-icon{font-size:32px;margin-bottom:6px;filter:grayscale(0)}
+.badge-card.locked .badge-icon{filter:grayscale(1)}
+.badge-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.badge-desc{font-size:11px;color:var(--muted)}
+.badge-prog{font-size:10px;color:var(--pink);font-weight:600;margin-top:6px}
+/* IA */
+.ia-quick-card{background:linear-gradient(135deg,#fff,#fef3ff);border:1.5px solid var(--border);border-radius:14px;padding:1rem;cursor:pointer}
+.ia-quick-card:active{background:#fce4f3}
+.ia-quick-card .quick-card-title{color:var(--pink)}
+.objection-card{background:#fff;border-radius:14px;padding:1rem;margin-bottom:.6rem;border:1.5px solid var(--border);cursor:pointer}
+.objection-card:active{background:var(--gray)}
+.objection-q{font-size:14px;font-weight:700;color:var(--blue);margin-bottom:6px}
+.objection-arrow{float:right;color:var(--muted);font-size:18px}
+.ia-btn-context{background:linear-gradient(135deg,#E91E8C,#c01875);color:#fff;border:none;border-radius:99px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-top:.5rem}
+.ia-btn-context:active{opacity:.8}
+.formation-hero{background:linear-gradient(135deg,var(--blue),var(--blue2));border-radius:16px;padding:1.25rem;margin-bottom:1rem;color:#fff}
+.formation-hero h2{font-size:18px;font-weight:700;margin-bottom:4px}
+.formation-hero p{font-size:13px;opacity:.8}
+.quick-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem}
+.quick-card{background:#fff;border-radius:14px;padding:1rem;border:1.5px solid var(--border);cursor:pointer}
+.quick-card:active{background:var(--gray)}
+.quick-card-icon{font-size:24px;margin-bottom:6px}
+.quick-card-title{font-size:13px;font-weight:700;color:var(--blue)}
+.quick-card-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.chapter-item{background:#fff;border-radius:14px;padding:1rem;margin-bottom:.6rem;border:1.5px solid var(--border);display:flex;align-items:center;gap:12px;cursor:pointer}
+.chapter-item:active{background:var(--gray)}
+.chapter-num{width:32px;height:32px;border-radius:50%;background:var(--pink);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chapter-title{font-size:14px;font-weight:600;color:var(--text)}
+.chapter-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.chapter-arrow{margin-left:auto;color:var(--muted);font-size:16px}
+/* CHAPTER DETAIL */
+#screen-chapter{background:#fff}
+.chapter-topbar{background:var(--blue);padding:.75rem 1rem;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.chapter-back{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer}
+.chapter-topbar-title{color:#fff;font-size:15px;font-weight:700;flex:1}
+.chapter-content{padding:1.25rem;padding-bottom:3rem;line-height:1.7;font-size:14px;color:var(--text)}
+.chapter-content h3{font-size:16px;font-weight:700;color:var(--blue);margin:1.25rem 0 .5rem}
+.chapter-content h4{font-size:14px;font-weight:700;color:var(--pink);margin:1rem 0 .4rem}
+.chapter-content p{margin-bottom:.75rem}
+.chapter-content ul{padding-left:1.25rem;margin-bottom:.75rem}
+.chapter-content ul li{margin-bottom:.3rem}
+.chapter-content .script-box{background:#f0f4ff;border-left:4px solid var(--blue);border-radius:0 10px 10px 0;padding:.85rem 1rem;margin:.75rem 0;font-size:13px;font-style:italic;color:#1e3a6b}
+.chapter-content .tip-box{background:#fce4f3;border-left:4px solid var(--pink);border-radius:0 10px 10px 0;padding:.85rem 1rem;margin:.75rem 0;font-size:13px;color:#7c0d4a}
+.chapter-content .warn-box{background:#fffbeb;border-left:4px solid var(--orange);border-radius:0 10px 10px 0;padding:.85rem 1rem;margin:.75rem 0;font-size:13px;color:#7c4f00}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="screen-login" class="screen active">
+  <div class="auth-logo">
+    <svg viewBox="0 0 72 72" fill="none"><path d="M10 32L36 10L62 32V62H44V44H28V62H10V32Z" stroke="white" stroke-width="4" fill="none"/><path d="M26 40L36 31L46 40V58H26V40Z" fill="#E91E8C"/><rect x="8" y="38" width="10" height="4" rx="2" fill="#E91E8C"/></svg>
+    <div class="auth-brand">Decoopman</div>
+    <div class="auth-sub">Immobilier</div>
+  </div>
+  <div class="auth-card">
+    <h2>Connexion</h2>
+    <div class="field"><label>Prénom</label><input id="l-nom" type="text" placeholder="Ton prénom" autocomplete="username"></div>
+    <div class="field"><label>Mot de passe</label><input id="l-mdp" type="password" placeholder="••••••••" autocomplete="current-password"><div class="err-msg" id="l-err">Prénom ou mot de passe incorrect.</div></div>
+    <button class="btn-primary" onclick="doLogin()">Se connecter</button>
+    <button class="btn-link" onclick="showScreen('screen-register')">Première fois ? Créer mon compte →</button>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div id="screen-register" class="screen">
+  <div class="auth-logo">
+    <svg viewBox="0 0 72 72" fill="none"><path d="M10 32L36 10L62 32V62H44V44H28V62H10V32Z" stroke="white" stroke-width="4" fill="none"/><path d="M26 40L36 31L46 40V58H26V40Z" fill="#E91E8C"/><rect x="8" y="38" width="10" height="4" rx="2" fill="#E91E8C"/></svg>
+    <div class="auth-brand">Decoopman</div>
+    <div class="auth-sub">Immobilier</div>
+  </div>
+  <div class="auth-card">
+    <h2>Créer mon compte</h2>
+    <div class="hint-msg">Tes données seront séparées de tes collègues.</div>
+    <div class="field"><label>Prénom</label><input id="r-nom" type="text" placeholder="Ex : Léa"></div>
+    <div class="field"><label>Mot de passe</label><input id="r-mdp" type="password" placeholder="Min. 4 caractères"></div>
+    <div class="field"><label>Confirmer</label><input id="r-mdp2" type="password" placeholder="Répète le mot de passe"><div class="err-msg" id="r-err"></div></div>
+    <button class="btn-primary" onclick="doRegister()">Créer mon compte</button>
+    <button class="btn-link" onclick="showScreen('screen-login')">← Déjà un compte ? Se connecter</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="screen-app" class="screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <svg class="topbar-logo" viewBox="0 0 28 28" fill="none"><path d="M3 12L14 3L25 12V25H17V17H11V25H3V12Z" stroke="white" stroke-width="2" fill="none"/><path d="M10 15L14 11.5L18 15V23H10V15Z" fill="#E91E8C"/></svg>
+      <div><div class="topbar-brand">Decoopman Immo</div><div class="topbar-user" id="topbar-user"></div></div>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Déconnexion</button>
+  </div>
+  <div class="tabs" id="main-tabs"></div>
+  <div class="page active" id="page-today">
+    <div style="height:.75rem"></div>
+    <div id="admin-banner" style="display:none"></div>
+    <div id="today-content"></div>
+  </div>
+  <div class="page" id="page-mandats">
+    <div style="height:.75rem"></div>
+    <div id="admin-m-selector" style="display:none"></div>
+    <div class="stats-row" id="m-stats"></div>
+    <div class="pipeline" id="m-pipeline"></div>
+    <div class="filter-bar" id="m-filters"></div>
+    <div id="m-cards"></div>
+  </div>
+  <div class="page" id="page-prospection">
+    <div style="height:.75rem"></div>
+    <div id="admin-p-selector" style="display:none"></div>
+    <div class="stats-row" id="p-stats"></div>
+    <input class="search-box" type="text" id="p-search" placeholder="🔍 Rechercher un contact…" oninput="renderProspection()">
+    <div class="filter-bar" id="p-filters"></div>
+    <div id="p-cards"></div>
+  </div>
+  <div class="page" id="page-ventes">
+    <div style="height:.75rem"></div>
+    <div id="admin-v-selector" style="display:none"></div>
+    <div class="stats-row" id="v-stats"></div>
+    <div id="v-cards"></div>
+  </div>
+  <div class="page" id="page-pointeuse">
+    <div style="height:.75rem"></div>
+    <div class="timer-card">
+      <div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Session en cours</div>
+      <div class="timer-display" id="timer-display">00:00:00</div>
+      <div class="field" style="margin-bottom:.75rem">
+        <select id="timer-type" style="text-align:center">
+          <option value="Porte-à-porte">🚪 Porte-à-porte</option>
+          <option value="Démarchage téléphonique">📞 Démarchage téléphonique</option>
+          <option value="Rencontre terrain">🤝 Rencontre terrain</option>
+          <option value="Réseaux sociaux">📱 Réseaux sociaux</option>
+          <option value="Suivi dossiers">📋 Suivi dossiers</option>
+        </select>
+      </div>
+      <div class="timer-btns">
+        <button class="timer-btn start" id="btn-start" onclick="timerStart()">▶ Démarrer</button>
+        <button class="timer-btn pause" id="btn-pause" onclick="timerPause()" style="display:none">⏸ Pause</button>
+        <button class="timer-btn stop" id="btn-stop" onclick="timerStop()" style="display:none">⏹ Terminer</button>
+      </div>
+    </div>
+    <div class="week-stats" id="week-stats"></div>
+    <div class="section-title">📅 Historique des sessions</div>
+    <div id="sessions-list"></div>
+  </div>
+  <!-- OBJECTIFS -->
+  <div class="page" id="page-objectifs">
+    <div style="height:.75rem"></div>
+    <div class="obj-tabs">
+      <button class="obj-tab active" onclick="setObjPeriod('jour')">Jour</button>
+      <button class="obj-tab" onclick="setObjPeriod('semaine')">Semaine</button>
+      <button class="obj-tab" onclick="setObjPeriod('mois')">Mois</button>
+      <button class="obj-tab" onclick="setObjPeriod('annee')">Année</button>
+    </div>
+    <div id="obj-progress-bar" style="margin-bottom:1rem"></div>
+    <div id="obj-list"></div>
+    <button class="add-inline-btn" onclick="openObjModal()">+ Ajouter un objectif</button>
+  </div>
+
+  <!-- TODO -->
+  <div class="page" id="page-todo">
+    <div style="height:.75rem"></div>
+    <div class="stats-row" id="todo-stats"></div>
+    <div class="filter-bar" id="todo-filters"></div>
+    <div id="todo-list"></div>
+    <button class="add-inline-btn" onclick="openTodoModal()">+ Ajouter une tâche</button>
+  </div>
+
+  <!-- COMMISSIONS -->
+  <div class="page" id="page-commissions">
+    <div style="height:.75rem"></div>
+    <div class="stats-row" id="comm-stats"></div>
+    <div class="section-title">📊 Évolution mensuelle</div>
+    <div id="comm-chart" style="background:#fff;border-radius:14px;padding:1rem;border:1.5px solid var(--border);margin-bottom:1rem"></div>
+    <div class="section-title">📋 Détail des commissions</div>
+    <div id="comm-list"></div>
+  </div>
+
+  <!-- BADGES -->
+  <div class="page" id="page-badges">
+    <div style="height:.75rem"></div>
+    <div id="level-card"></div>
+    <div class="section-title">🏆 Mes badges</div>
+    <div id="badges-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1.5rem"></div>
+    <div class="section-title">🎯 Prochains défis</div>
+    <div id="badges-locked"></div>
+  </div>
+
+  <!-- IA -->
+  <div class="page" id="page-ia">
+    <div style="height:.75rem"></div>
+    <div style="background:linear-gradient(135deg,var(--blue),var(--blue2));border-radius:16px;padding:1.25rem;margin-bottom:1rem;color:#fff">
+      <div style="font-size:18px;font-weight:700">🤖 Assistant IA Decoopman</div>
+      <div style="font-size:13px;opacity:.85;margin-top:4px">Connaît la méthode Decoopman par cœur</div>
+    </div>
+    <div class="section-title">⚡ Génération rapide</div>
+    <div class="quick-cards" id="ia-quick"></div>
+    <div class="section-title">💡 Aide aux objections R1</div>
+    <div id="ia-objections"></div>
+  </div>
+
+  <div class="page" id="page-admin">
+    <div style="height:.75rem"></div>
+    <div style="background:linear-gradient(135deg,var(--blue),var(--blue2));border-radius:16px;padding:1.25rem;margin-bottom:1rem;color:#fff">
+      <div style="font-size:18px;font-weight:700">⚙️ Panneau Admin</div>
+      <div style="font-size:13px;opacity:.8;margin-top:4px">Gestion des comptes collaborateurs</div>
+    </div>
+    <div class="stats-row" id="admin-stats"></div>
+    <div class="section-title" style="margin-top:.5rem">👥 Comptes utilisateurs</div>
+    <div id="admin-users-list"></div>
+  </div>
+
+  <div class="page" id="page-formation">
+    <div style="height:.75rem"></div>
+    <div class="formation-hero">
+      <h2>📚 Guide de formation</h2>
+      <p>Decoopman Immobilier — Tout ce qu'il faut savoir</p>
+    </div>
+    <div class="section-title">⚡ Aide-mémoire rapide</div>
+    <div class="quick-cards" id="quick-cards"></div>
+    <div class="section-title">📖 Guide complet — 10 chapitres</div>
+    <div id="chapters-list"></div>
+  </div>
+  <button class="fab" id="fab" onclick="openAddModal()">+</button>
+</div>
+
+<!-- CHAPTER DETAIL -->
+<div id="screen-chapter" class="screen">
+  <div class="chapter-topbar">
+    <button class="chapter-back" onclick="closeChapter()">← Retour</button>
+    <div class="chapter-topbar-title" id="chapter-topbar-title"></div>
+  </div>
+  <div class="chapter-content" id="chapter-body"></div>
+</div>
+
+<!-- MODAL MANDAT -->
+<div class="modal-overlay" id="modal-mandat">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mm-title">Nouveau mandat</div>
+    <div class="field"><label>Adresse du bien</label><input id="mm-adresse" type="text" placeholder="12 rue des Lilas, Béthune"></div>
+    <div class="field-row">
+      <div class="field"><label>Type de bien</label><select id="mm-type"><option>Appartement</option><option>Maison</option><option>Local commercial</option><option>Terrain</option><option>Immeuble</option></select></div>
+      <div class="field"><label>Mandat</label><select id="mm-mandat"><option value="exclusif">Exclusif</option><option value="simple">Simple</option></select></div>
+    </div>
+    <div class="field"><label>Étape</label><select id="mm-etape"><option>Mandat</option><option>Visite</option><option>Offre</option><option>Vendu</option></select></div>
+    <div class="field-row">
+      <div class="field"><label>Prix demandé (€)</label><input id="mm-prix" type="number" placeholder="350000"></div>
+      <div class="field"><label>Offre reçue (€)</label><input id="mm-offre" type="number" placeholder="optionnel"></div>
+    </div>
+    <div class="field"><label>Type de commission</label>
+      <div class="toggle-row" style="margin-bottom:.5rem">
+        <button class="toggle-btn active" id="comm-pct-btn" onclick="setCommType('pct')">% Pourcentage</button>
+        <button class="toggle-btn" id="comm-fix-btn" onclick="setCommType('fix')">€ Prix fixe</button>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field" id="comm-pct-field"><label>Commission (%)</label><input id="mm-commission-pct" type="number" step="0.1" placeholder="4.5"></div>
+      <div class="field" id="comm-fix-field" style="display:none"><label>Commission (€)</label><input id="mm-commission-fix" type="number" placeholder="5000"></div>
+      <div class="field"><label>Nb visites</label><input id="mm-visites" type="number" placeholder="0"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Date d'entrée</label><input id="mm-dentree" type="date"></div>
+      <div class="field"><label>Expiration</label><input id="mm-dexpir" type="date"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-mandat')">Annuler</button>
+      <button class="btn-save" onclick="saveMandat()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PROSPECTION -->
+<div class="modal-overlay" id="modal-prospection">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mp-title">Nouveau contact</div>
+    <div class="field"><label>Nom complet</label><input id="mp-nom" type="text" placeholder="Jean Dupont"></div>
+    <div class="field-row">
+      <div class="field"><label>Téléphone</label><input id="mp-tel" type="tel" placeholder="06 00 00 00 00"></div>
+      <div class="field"><label>Email</label><input id="mp-email" type="email" placeholder="optionnel"></div>
+    </div>
+    <div class="field"><label>Adresse du bien</label><input id="mp-addr" type="text" placeholder="12 rue des Lilas, Béthune"></div>
+    <div class="field-row">
+      <div class="field"><label>Type</label><select id="mp-type"><option>Propriétaire</option><option>Estimation</option><option>Bouche à oreille</option><option>Rencontre terrain</option><option>Démarchage téléphonique</option><option>Concurrent</option></select></div>
+      <div class="field"><label>Statut</label><select id="mp-stat"><option>À appeler</option><option>En cours</option><option>Intéressé</option><option>Pas prêt</option><option>Refus</option><option>Gagné</option><option>Perdu</option></select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>1er contact</label><input id="mp-cont" type="date"></div>
+      <div class="field"><label>Rappel</label><input id="mp-rapp" type="date"></div>
+    </div>
+    <div class="field"><label>Résultat de l'échange</label>
+      <select id="mp-result"><option value="">— Sélectionner —</option><option>Intéressé, à rappeler</option><option>Pas prêt, dans 6 mois</option><option>Refus catégorique</option><option>Estimation demandée</option><option>Mandat signé</option><option>Déjà avec un concurrent</option></select>
+    </div>
+    <div class="field"><label>Notes libres</label><textarea id="mp-notes" placeholder="Contexte, suite à donner…"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-prospection')">Annuler</button>
+      <button class="btn-save" onclick="saveContact()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VENTE -->
+<div class="modal-overlay" id="modal-vente">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mv-title">Nouvelle vente</div>
+    <div class="field"><label>Adresse du bien</label><input id="mv-adresse" type="text" placeholder="12 rue des Lilas, Béthune"></div>
+    <div class="field-row">
+      <div class="field"><label>Prix de vente (€)</label><input id="mv-prix" type="number" placeholder="350000"></div>
+      <div class="field"><label>Commission (€)</label><input id="mv-commission" type="number" placeholder="15750"></div>
+    </div>
+    <div class="field"><label>Étape actuelle</label>
+      <select id="mv-etape"><option value="0">Offre acceptée</option><option value="1">Compromis signé</option><option value="2">Financement obtenu</option><option value="3">Acte notaire signé</option></select>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Date offre acceptée</label><input id="mv-d0" type="date"></div>
+      <div class="field"><label>Date compromis</label><input id="mv-d1" type="date"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Date financement</label><input id="mv-d2" type="date"></div>
+      <div class="field"><label>Date acte notaire</label><input id="mv-d3" type="date"></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="mv-notes" placeholder="Nom notaire, acheteur, remarques…"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-vente')">Annuler</button>
+      <button class="btn-save" onclick="saveVente()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL OBJECTIF -->
+<div class="modal-overlay" id="modal-objectif">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mo-title">Nouvel objectif</div>
+    <div class="field"><label>Objectif</label><input id="mo-texte" type="text" placeholder="Ex : 10 contacts par jour"></div>
+    <div class="field"><label>Période</label>
+      <select id="mo-period"><option value="jour">Journalier</option><option value="semaine">Hebdomadaire</option><option value="mois">Mensuel</option><option value="annee">Annuel</option></select>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Cible (nombre)</label><input id="mo-cible" type="number" placeholder="Ex : 10"></div>
+      <div class="field"><label>Unité</label><input id="mo-unite" type="text" placeholder="contacts, €, mandats…"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-objectif')">Annuler</button>
+      <button class="btn-save" onclick="saveObjectif()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IA RESULT -->
+<div class="modal-overlay" id="modal-ia-result">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="ia-result-title">Résultat IA</div>
+    <div id="ia-result-content" style="background:var(--gray);border-radius:12px;padding:1rem;font-size:14px;line-height:1.6;color:var(--text);white-space:pre-wrap;margin-bottom:1rem;max-height:50vh;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-ia-result')">Fermer</button>
+      <button class="btn-save" onclick="copyIAResult()">📋 Copier</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IA INPUT -->
+<div class="modal-overlay" id="modal-ia-input">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="ia-input-title">Génération IA</div>
+    <div id="ia-input-fields"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-ia-input')">Annuler</button>
+      <button class="btn-save" onclick="generateIA()">✨ Générer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TODO -->
+<div class="modal-overlay" id="modal-todo">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="mt-title">Nouvelle tâche</div>
+    <div class="field"><label>Tâche</label><input id="mt-texte" type="text" placeholder="Ex : Appeler M. Dupont"></div>
+    <div class="field-row">
+      <div class="field"><label>Priorité</label>
+        <select id="mt-priorite"><option value="haute">🔴 Haute</option><option value="moyenne">🟡 Moyenne</option><option value="basse">🟢 Basse</option></select>
+      </div>
+      <div class="field"><label>Échéance</label><input id="mt-date" type="date"></div>
+    </div>
+    <div class="field"><label>Catégorie</label>
+      <select id="mt-cat"><option value="prospection">Prospection</option><option value="mandat">Mandat</option><option value="vente">Vente</option><option value="admin">Administratif</option><option value="perso">Personnel</option></select>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="mt-notes" placeholder="Détails…"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-todo')">Annuler</button>
+      <button class="btn-save" onclick="saveTodo()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MAJ PROGRESSION -->
+<div class="modal-overlay" id="modal-progress">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Mettre à jour la progression</div>
+    <div id="progress-obj-name" style="font-size:14px;color:var(--muted);margin-bottom:1rem"></div>
+    <div class="field"><label>Valeur actuelle</label><input id="prog-val" type="number" placeholder="0"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-progress')">Annuler</button>
+      <button class="btn-save" onclick="saveProgress()">Mettre à jour</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══ AUTH ═══
+function simpleHash(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return String(h);}
+const ADMINS = ['morgan','mickael'];
+let currentUser=null, currentUserName='', isAdmin=false, adminViewAs=null;
+
+function getUsers(){try{return JSON.parse(localStorage.getItem('deco_users')||'{}')}catch(e){return{}}}
+function saveUsers(u){localStorage.setItem('deco_users',JSON.stringify(u))}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function clearErrors(){document.querySelectorAll('.err-msg').forEach(e=>{e.classList.remove('show')});document.querySelectorAll('.field input').forEach(i=>i.classList.remove('error'))}
+
+function doLogin(){
+  const nom=document.getElementById('l-nom').value.trim().toLowerCase();
+  const mdp=document.getElementById('l-mdp').value;
+  const users=getUsers();
+  if(!nom||!mdp){document.getElementById('l-err').textContent='Remplis tous les champs.';document.getElementById('l-err').classList.add('show');return}
+  if(!users[nom]||users[nom].mdp!==simpleHash(mdp)){document.getElementById('l-err').classList.add('show');return}
+  currentUser=nom;currentUserName=users[nom].prenom;
+  isAdmin=ADMINS.includes(nom);
+  localStorage.setItem('deco_session',nom);
+  startApp();
+}
+function doRegister(){
+  const prenom=document.getElementById('r-nom').value.trim();
+  const nom=prenom.toLowerCase();
+  const mdp=document.getElementById('r-mdp').value;
+  const mdp2=document.getElementById('r-mdp2').value;
+  const err=document.getElementById('r-err');
+  if(!prenom||!mdp||!mdp2){err.textContent='Remplis tous les champs.';err.classList.add('show');return}
+  if(mdp.length<4){err.textContent='Mot de passe trop court (min. 4 caractères).';err.classList.add('show');return}
+  if(mdp!==mdp2){err.textContent='Les mots de passe ne correspondent pas.';err.classList.add('show');document.getElementById('r-mdp2').classList.add('error');return}
+  const users=getUsers();
+  if(users[nom]){err.textContent='Ce prénom est déjà utilisé.';err.classList.add('show');return}
+  users[nom]={prenom,mdp:simpleHash(mdp)};saveUsers(users);
+  currentUser=nom;currentUserName=prenom;isAdmin=ADMINS.includes(nom);
+  localStorage.setItem('deco_session',nom);
+  document.getElementById('r-mdp').value='';document.getElementById('r-mdp2').value='';
+  startApp();
+}
+function doLogout(){
+  currentUser=null;adminViewAs=null;
+  localStorage.removeItem('deco_session');
+  document.getElementById('fab').classList.remove('visible');
+  document.getElementById('l-nom').value='';document.getElementById('l-mdp').value='';
+  showScreen('screen-login');
+}
+window.addEventListener('load',()=>{
+  const s=localStorage.getItem('deco_session');
+  const users=getUsers();
+  if(s&&users[s]){currentUser=s;currentUserName=users[s].prenom;isAdmin=ADMINS.includes(s);startApp();}
+  ['l-nom','l-mdp'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()}));
+  ['r-nom','r-mdp','r-mdp2'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doRegister()}));
+});
+
+function startApp(){
+  document.getElementById('topbar-user').textContent=isAdmin?currentUserName+' (Admin)':currentUserName;
+  buildTabs();showScreen('screen-app');
+  document.getElementById('fab').classList.add('visible');
+  renderToday();renderMandats();renderProspection();renderVentes();renderPointeuse();renderObjectifs();renderTodo();renderCommissions();renderBadges();
+  if(isAdmin)renderAdmin();
+  if(isAdmin)renderAdmin();
+  if(!isAdmin)renderFormation();
+}
+
+// ═══ TABS ═══
+let currentTab='today';
+function buildTabs(){
+  const tabs=[
+    {id:'today',label:'🏠 Aujourd\'hui'},
+    {id:'mandats',label:'📁 Mandats'},
+    {id:'prospection',label:'📋 Prospects'},
+    {id:'ventes',label:'💰 Ventes'},
+    {id:'pointeuse',label:'⏱ Temps'},
+    {id:'objectifs',label:'🎯 Objectifs'},
+    {id:'todo',label:'✅ Tâches'},
+    {id:'commissions',label:'💶 Commissions'},
+    {id:'badges',label:'🏆 Badges'},
+    {id:'ia',label:'🤖 IA Decoopman'},
+    {id:'commissions',label:'💶 Commissions'},
+    {id:'kanban',label:'🔄 Pipeline'},
+    {id:'agenda',label:'📅 Agenda'},
+    {id:'secteur',label:'🗺️ Secteur'},
+  ];
+  if(!isAdmin) tabs.push({id:'formation',label:'📚 Formation'});
+  if(isAdmin) tabs.push({id:'admin',label:'⚙️ Admin'});
+  document.getElementById('main-tabs').innerHTML=tabs.map(t=>`<button class="tab${t.id==='today'?' active':''}" onclick="switchTab('${t.id}')">${t.label}</button>`).join('');
+  // Setup admin selectors
+  if(isAdmin){
+    const users=getUsers();
+    const opts=Object.keys(users).map(k=>`<option value="${k}">${users[k].prenom}</option>`).join('');
+    ['m','p','v'].forEach(p=>{
+      document.getElementById(`admin-${p}-selector`).style.display='block';
+      document.getElementById(`admin-${p}-selector`).innerHTML=`<div class="admin-selector"><label>👑 Vue admin — données de :</label><select onchange="setAdminView('${p}',this.value)">${opts}</select></div>`;
+    });
+    document.getElementById('admin-banner').style.display='block';
+    document.getElementById('admin-banner').innerHTML=`<div style="background:linear-gradient(135deg,#1B3A6B,#2d5aad);border-radius:14px;padding:1rem;margin-bottom:1rem;color:#fff"><div style="font-size:13px;font-weight:700">👑 Mode Admin — Morgan</div><div style="font-size:12px;opacity:.8;margin-top:2px">Tu vois les données de tous les collaborateurs via les onglets.</div></div>`;
+  }
+}
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>{if(t.textContent.toLowerCase().includes(tab)||t.getAttribute('onclick')?.includes(tab))t.classList.add('active')});
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  if(tab==='today')renderToday();
+  if(tab==='pointeuse')renderPointeuse();
+  if(tab==='objectifs')renderObjectifs();
+  if(tab==='todo')renderTodo();
+  if(tab==='admin')renderAdmin();
+  if(tab==='commissions')renderCommissions();
+  if(tab==='badges')renderBadges();
+  if(tab==='ia')renderIA();
+}
+function setAdminView(section,user){
+  adminViewAs=user;
+  if(section==='m')renderMandats();
+  if(section==='p')renderProspection();
+  if(section==='v')renderVentes();
+}
+
+// ═══ STORAGE ═══
+const viewUser=()=>isAdmin?(adminViewAs||currentUser):currentUser;
+const ukey=(u,k)=>`deco_${u}_${k}`;
+const usave=(k,v)=>localStorage.setItem(ukey(currentUser,k),JSON.stringify(v));
+const uload=(u,k,def)=>{try{const v=localStorage.getItem(ukey(u,k));return v?JSON.parse(v):def}catch(e){return def}};
+
+// ═══ UTILS ═══
+const fmt=n=>n?n.toLocaleString('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}):'—';
+const fmtd=d=>{if(!d)return'—';const[y,m,j]=d.split('-');return`${j}/${m}/${y}`};
+const today0=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+const daysFrom=d=>{if(!d)return null;const dd=new Date(d);dd.setHours(0,0,0,0);return Math.ceil((dd-today0())/86400000)};
+
+// ═══ TODAY ═══
+function renderToday(){
+  const mandats=uload(currentUser,'mandats',[]);
+  const contacts=uload(currentUser,'contacts',[]);
+  const ventes=uload(currentUser,'ventes',[]);
+  const now=new Date();
+  const hour=now.getHours();
+  const greeting=hour<12?'Bonjour':'Bonsoir';
+  let html=`<div style="background:linear-gradient(135deg,var(--blue),var(--blue2));border-radius:16px;padding:1.25rem;margin-bottom:1rem;color:#fff">
+    <div style="font-size:18px;font-weight:700">${greeting}, ${currentUserName} 👋</div>
+    <div style="font-size:13px;opacity:.8;margin-top:4px">${now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
+  </div>`;
+  // Stats rapides
+  const rappelsUrgents=contacts.filter(c=>{const n=daysFrom(c.rapp);return n!==null&&n>=0&&n<=3}).length;
+  const mandatsExp=mandats.filter(b=>{const j=daysFrom(b.dexpir);return j!==null&&j>=0&&j<=30}).length;
+  const ventesEnCours=ventes.filter(v=>Number(v.etape)<3).length;
+  html+=`<div class="stats-row">
+    <div class="stat-card"><div class="stat-label">Rappels urgents</div><div class="stat-val" style="color:${rappelsUrgents>0?'var(--red)':'var(--green)'}">  ${rappelsUrgents}</div></div>
+    <div class="stat-card"><div class="stat-label">Mandats expirent bientôt</div><div class="stat-val" style="color:${mandatsExp>0?'var(--orange)':'var(--green)'}">  ${mandatsExp}</div></div>
+    <div class="stat-card"><div class="stat-label">Ventes en cours</div><div class="stat-val">${ventesEnCours}</div></div>
+    <div class="stat-card"><div class="stat-label">Total prospects</div><div class="stat-val">${contacts.length}</div></div>
+  </div>`;
+  // Rappels du jour
+  const rappelsAuj=contacts.filter(c=>{const n=daysFrom(c.rapp);return n!==null&&n>=0&&n<=1});
+  if(rappelsAuj.length){
+    html+=`<div class="section-title">📞 À rappeler aujourd'hui</div>`;
+    rappelsAuj.forEach(c=>{
+      html+=`<div class="today-card urgent"><div class="today-icon">📞</div><div class="today-text"><div class="today-main">${c.nom}</div><div class="today-sub">${c.tel||''} · ${c.type} · ${c.result||'Pas de résultat noté'}</div></div></div>`;
+    });
+  }
+  // Mandats qui expirent
+  const expBientot=mandats.filter(b=>{const j=daysFrom(b.dexpir);return j!==null&&j>=0&&j<=14});
+  if(expBientot.length){
+    html+=`<div class="section-title">⚠️ Mandats à renouveler</div>`;
+    expBientot.forEach(b=>{
+      const j=daysFrom(b.dexpir);
+      const jlblT=j===0?"aujourd'hui":j===1?"demain":"dans "+j+" jours";
+      html+=`<div class="today-card warn"><div class="today-icon">🏠</div><div class="today-text"><div class="today-main">${b.adresse}</div><div class="today-sub">Expire ${jlblT}</div></div></div>`;
+    });
+  }
+  // Conseil du jour
+  const conseils=["💡 Règle du jour : 70 % de ton temps doit être passé EN CONTACT avec un humain.","💡 Sur 100 personnes contactées, 5 te rappelleront dans 6 mois. Sème aujourd'hui.","💡 Après chaque appel, note dans l'app — 5 secondes maintenant, 5 minutes évitées demain.","💡 Un R1 qui dure 1h30 à 2h, c'est bon signe. Prends le temps de créer le lien.","💡 Ne booste jamais une pub depuis l'app iPhone — passe par Safari sur business.facebook.com.","💡 Réponds aux MPs en moins d'1h. Le prospect refroidit vite.","💡 Propose toujours un choix fermé : 'Mardi 18h ou samedi 10h ?' jamais 'vous voulez qu'on se voie ?'"];
+  const conseil=conseils[new Date().getDay()%conseils.length];
+  html+=`<div style="background:#fce4f3;border-radius:14px;padding:1rem;margin-top:.5rem;font-size:13px;color:#7c0d4a;line-height:1.6">${conseil}</div>`;
+  document.getElementById('today-content').innerHTML=html;
+}
+
+// ═══ MANDATS ═══
+const ETAPES=['Mandat','Visite','Offre','Vendu'];
+const ECOLS={Mandat:{dot:'#2d5aad',bg:'#e8eef7',tx:'#1B3A6B'},Visite:{dot:'#E91E8C',bg:'#fce4f3',tx:'#9c0f60'},Offre:{dot:'#d97706',bg:'#fef3c7',tx:'#92400e'},Vendu:{dot:'#16a34a',bg:'#dcfce7',tx:'#14532d'}};
+let mEditId=null,mFilter='Tous',commType='pct';
+const calcComm=b=>b.commType==='fix'?b.commissionFix:(b.offre||b.prix)*(b.commissionPct/100);
+const getMandats=()=>uload(viewUser(),'mandats',[]);
+const saveMandats=d=>usave('mandats',d);
+function setCommType(t){commType=t;document.getElementById('comm-pct-btn').classList.toggle('active',t==='pct');document.getElementById('comm-fix-btn').classList.toggle('active',t==='fix');document.getElementById('comm-pct-field').style.display=t==='pct'?'block':'none';document.getElementById('comm-fix-field').style.display=t==='fix'?'block':'none'}
+
+function renderMandats(){
+  const data=getMandats();
+  const totalComm=data.reduce((s,b)=>s+calcComm(b),0);
+  document.getElementById('m-stats').innerHTML=[
+    {l:'Total mandats',v:data.length,c:'var(--blue)'},{l:'Commissions',v:fmt(totalComm),c:'var(--pink)'},
+    {l:'En cours',v:data.filter(b=>b.etape!=='Vendu').length,c:'var(--blue)'},{l:'Ventes signées',v:data.filter(b=>b.etape==='Vendu').length,c:'var(--green)'},
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.l}</div><div class="stat-val" style="color:${s.c}">${s.v}</div></div>`).join('');
+  document.getElementById('m-pipeline').innerHTML=ETAPES.map(e=>{const c=ECOLS[e],count=data.filter(b=>b.etape===e).length;return`<div class="pipe-item" style="border-top-color:${c.dot}"><div class="pipe-count" style="color:${c.dot}">${count}</div><div class="pipe-label">${e}</div></div>`}).join('');
+  document.getElementById('m-filters').innerHTML=['Tous',...ETAPES].map(e=>`<button class="filter-chip${mFilter===e?' active':''}" onclick="setMFilter('${e}')">${e}${e!=='Tous'?' ('+data.filter(b=>b.etape===e).length+')':''}</button>`).join('');
+  const rows=mFilter==='Tous'?data:data.filter(b=>b.etape===mFilter);
+  const el=document.getElementById('m-cards');
+  if(!rows.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">🏠</div><div class="empty-text">Aucun mandat${mFilter!=='Tous'?' dans cette étape':''}<br><span style="font-size:13px">Appuie sur + pour en ajouter</span></div></div>`;return}
+  el.innerHTML=rows.map(b=>{
+    const c=ECOLS[b.etape],j=daysFrom(b.dexpir);
+    const jcol=j===null?'var(--muted)':j<0?'var(--red)':j<=30?'var(--orange)':'var(--muted)';
+    const jlbl=j===null?'—':j<0?'Expiré ⚠':j===0?"Auj. ⚠":j===1?'Demain':`${j}j${j<=30?' ⚠':''}`;
+    const commAff=b.commType==='fix'?fmt(b.commissionFix):`${b.commissionPct}% → ${fmt(calcComm(b))}`;
+    return`<div class="item-card">
+      <div class="card-header"><span class="badge" style="background:${c.bg};color:${c.tx}"><span class="badge-dot" style="background:${c.dot}"></span>${b.etape}</span><span style="font-size:11px;color:${b.mandat==='exclusif'?'var(--pink)':'var(--muted)'};font-weight:600">Mandat ${b.mandat}</span></div>
+      <div class="card-title">${b.adresse}</div><div class="card-sub">${b.type}</div>
+      <div class="card-row">
+        <div><div class="card-field-label">Prix demandé</div><div class="card-field-val">${fmt(b.prix)}</div></div>
+        <div><div class="card-field-label">Offre reçue</div><div class="card-field-val" style="color:${b.offre?'var(--green)':'var(--muted)'}">${fmt(b.offre)}</div></div>
+        <div><div class="card-field-label">Commission</div><div class="card-field-val" style="color:var(--pink);font-size:12px">${commAff}</div></div>
+        <div><div class="card-field-label">Expiration</div><div class="card-field-val" style="color:${jcol};font-size:13px">${jlbl}</div></div>
+      </div>
+      <div class="card-footer"><span>${b.visites||0} visite${b.visites>1?'s':''} · ${fmtd(b.dentree)}</span>
+        <div class="card-actions"><button class="act-btn" onclick="editMandat('${b.id}')">Modifier</button><button class="act-btn danger" onclick="delMandat('${b.id}')">Suppr.</button></div>
+      </div></div>`;
+  }).join('');
+}
+function setMFilter(f){mFilter=f;renderMandats()}
+function openMandatModal(b=null){
+  mEditId=b?b.id:null;
+  document.getElementById('mm-title').textContent=b?'Modifier le mandat':'Nouveau mandat';
+  document.getElementById('mm-adresse').value=b?.adresse||'';
+  document.getElementById('mm-type').value=b?.type||'Appartement';
+  document.getElementById('mm-mandat').value=b?.mandat||'exclusif';
+  document.getElementById('mm-etape').value=b?.etape||'Mandat';
+  document.getElementById('mm-prix').value=b?.prix||'';
+  document.getElementById('mm-offre').value=b?.offre||'';
+  if(b){setCommType(b.commType||'pct');document.getElementById('mm-commission-pct').value=b.commissionPct||'';document.getElementById('mm-commission-fix').value=b.commissionFix||'';}
+  else{setCommType('pct');}
+  document.getElementById('mm-visites').value=b?.visites||0;
+  document.getElementById('mm-dentree').value=b?.dentree||'';
+  document.getElementById('mm-dexpir').value=b?.dexpir||'';
+  document.getElementById('modal-mandat').classList.add('open');
+}
+function editMandat(id){const b=getMandats().find(x=>x.id===id);if(b)openMandatModal(b)}
+function delMandat(id){if(!confirm('Supprimer ce mandat ?'))return;saveMandats(getMandats().filter(b=>b.id!==id));renderMandats()}
+function saveMandat(){
+  const adresse=document.getElementById('mm-adresse').value.trim();
+  if(!adresse)return alert("L'adresse est obligatoire.");
+  const entry={id:mEditId||Date.now().toString(),adresse,type:document.getElementById('mm-type').value,mandat:document.getElementById('mm-mandat').value,etape:document.getElementById('mm-etape').value,prix:Number(document.getElementById('mm-prix').value)||0,offre:document.getElementById('mm-offre').value?Number(document.getElementById('mm-offre').value):null,commType,commissionPct:Number(document.getElementById('mm-commission-pct').value)||0,commissionFix:Number(document.getElementById('mm-commission-fix').value)||0,visites:Number(document.getElementById('mm-visites').value)||0,dentree:document.getElementById('mm-dentree').value,dexpir:document.getElementById('mm-dexpir').value};
+  const data=getMandats();
+  if(mEditId)saveMandats(data.map(b=>b.id===mEditId?entry:b));else saveMandats([...data,entry]);
+  closeModal('modal-mandat');renderMandats();
+}
+
+// ═══ PROSPECTION ═══
+const TC={Propriétaire:{bg:'#e8eef7',tx:'#1B3A6B'},Estimation:{bg:'#fce4f3',tx:'#9c0f60'},'Bouche à oreille':{bg:'#dcfce7',tx:'#14532d'},'Rencontre terrain':{bg:'#f0fdf4',tx:'#15803d'},'Démarchage téléphonique':{bg:'#fef3c7',tx:'#92400e'},Concurrent:{bg:'#fee2e2',tx:'#991b1b'}};
+const SC={'À appeler':{bg:'#fef3c7',tx:'#92400e'},'En cours':{bg:'#e8eef7',tx:'#1B3A6B'},'Intéressé':{bg:'#dcfce7',tx:'#14532d'},'Pas prêt':{bg:'#f1f5f9',tx:'#64748b'},'Refus':{bg:'#fee2e2',tx:'#991b1b'},'Gagné':{bg:'#fce4f3',tx:'#9c0f60'},'Perdu':{bg:'#fee2e2',tx:'#991b1b'}};
+let pEditId=null,pFilter='Tous';
+const getContacts=()=>uload(viewUser(),'contacts',[]);
+const saveContacts=d=>usave('contacts',d);
+const rappelLbl=d=>{const n=daysFrom(d);if(n===null)return{lbl:'—',cls:''};if(n<0)return{lbl:fmtd(d)+' ⚠',cls:'r-urgent'};if(n===0)return{lbl:"Aujourd'hui !",cls:'r-urgent'};if(n===1)return{lbl:'Demain',cls:'r-soon'};if(n<=7)return{lbl:`${fmtd(d)} (${n}j)`,cls:'r-soon'};return{lbl:fmtd(d),cls:'r-ok'}};
+
+function renderProspection(){
+  const data=getContacts();
+  const q=document.getElementById('p-search')?.value?.toLowerCase()||'';
+  const urg=data.filter(c=>{const n=daysFrom(c.rapp);return n!==null&&n>=0&&n<=3}).length;
+  document.getElementById('p-stats').innerHTML=[
+    {l:'Total contacts',v:data.length,c:'var(--blue)'},{l:'Rappels urgents',v:urg,c:urg>0?'var(--red)':'var(--blue)'},
+    {l:'Intéressés',v:data.filter(c=>c.stat==='Intéressé').length,c:'var(--blue)'},{l:'Gagnés',v:data.filter(c=>c.stat==='Gagné').length,c:'var(--pink)'},
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.l}</div><div class="stat-val" style="color:${s.c}">${s.v}</div></div>`).join('');
+  const statuts=['Tous','À appeler','En cours','Intéressé','Pas prêt','Refus','Gagné','Perdu'];
+  document.getElementById('p-filters').innerHTML=statuts.map(s=>`<button class="filter-chip${pFilter===s?' active':''}" onclick="setPFilter('${s}')">${s}</button>`).join('');
+  let rows=data;
+  if(pFilter!=='Tous')rows=rows.filter(c=>c.stat===pFilter);
+  if(q)rows=rows.filter(c=>`${c.nom}${c.addr}${c.notes}`.toLowerCase().includes(q));
+  const el=document.getElementById('p-cards');
+  if(!rows.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Aucun contact<br><span style="font-size:13px">Appuie sur + pour en ajouter</span></div></div>`;return}
+  el.innerHTML=rows.map(c=>{
+    const tc=TC[c.type]||{bg:'#f1f5f9',tx:'#64748b'};
+    const sc=SC[c.stat]||{bg:'#f1f5f9',tx:'#64748b'};
+    const r=rappelLbl(c.rapp);
+    return`<div class="item-card">
+      <div class="card-header"><span class="badge" style="background:${tc.bg};color:${tc.tx}">${c.type}</span><span class="badge" style="background:${sc.bg};color:${sc.tx}">${c.stat}</span></div>
+      <div class="card-title">${c.nom}</div><div class="card-sub">${c.tel||''}${c.tel&&c.addr?' · ':''}${c.addr||''}</div>
+      <div class="card-row">
+        <div><div class="card-field-label">1er contact</div><div class="card-field-val" style="font-size:13px">${fmtd(c.cont)}</div></div>
+        <div><div class="card-field-label">Rappel</div><div class="card-field-val ${r.cls}" style="font-size:13px">${r.lbl}</div></div>
+      </div>
+      ${c.result?`<div style="font-size:12px;color:var(--blue);font-weight:600;margin-bottom:4px">${c.result}</div>`:''}
+      ${c.notes?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px">${c.notes}</div>`:''}
+      <div class="card-footer"><span></span><div class="card-actions"><button class="act-btn" onclick="editContact('${c.id}')">Modifier</button><button class="act-btn danger" onclick="delContact('${c.id}')">Suppr.</button></div></div>
+    </div>`;
+  }).join('');
+}
+function setPFilter(f){pFilter=f;renderProspection()}
+function openContactModal(c=null){
+  pEditId=c?c.id:null;
+  document.getElementById('mp-title').textContent=c?'Modifier':'Nouveau contact';
+  document.getElementById('mp-nom').value=c?.nom||'';document.getElementById('mp-tel').value=c?.tel||'';document.getElementById('mp-email').value=c?.email||'';document.getElementById('mp-addr').value=c?.addr||'';document.getElementById('mp-type').value=c?.type||'Propriétaire';document.getElementById('mp-stat').value=c?.stat||'À appeler';document.getElementById('mp-cont').value=c?.cont||'';document.getElementById('mp-rapp').value=c?.rapp||'';document.getElementById('mp-result').value=c?.result||'';document.getElementById('mp-notes').value=c?.notes||'';
+  document.getElementById('modal-prospection').classList.add('open');
+}
+function editContact(id){const c=getContacts().find(x=>x.id===id);if(c)openContactModal(c)}
+function delContact(id){if(!confirm('Supprimer ?'))return;saveContacts(getContacts().filter(c=>c.id!==id));renderProspection()}
+function saveContact(){
+  const nom=document.getElementById('mp-nom').value.trim();
+  if(!nom)return alert('Le nom est obligatoire.');
+  const entry={id:pEditId||Date.now().toString(),nom,tel:document.getElementById('mp-tel').value.trim(),email:document.getElementById('mp-email').value.trim(),addr:document.getElementById('mp-addr').value.trim(),type:document.getElementById('mp-type').value,stat:document.getElementById('mp-stat').value,cont:document.getElementById('mp-cont').value,rapp:document.getElementById('mp-rapp').value,result:document.getElementById('mp-result').value,notes:document.getElementById('mp-notes').value.trim()};
+  const data=getContacts();
+  if(pEditId)saveContacts(data.map(c=>c.id===pEditId?entry:c));else saveContacts([...data,entry]);
+  closeModal('modal-prospection');renderProspection();
+}
+
+// ═══ VENTES ═══
+const VENTE_STEPS=['Offre acceptée','Compromis signé','Financement obtenu','Acte notaire ✅'];
+const VSTEP_COLS=['#E91E8C','#d97706','#2d5aad','#16a34a'];
+let vEditId=null;
+const getVentes=()=>uload(viewUser(),'ventes',[]);
+const saveVentes=d=>usave('ventes',d);
+
+function renderVentes(){
+  const data=getVentes();
+  const totalComm=data.reduce((s,v)=>s+(v.commission||0),0);
+  const signees=data.filter(v=>Number(v.etape)===3).length;
+  document.getElementById('v-stats').innerHTML=[
+    {l:'Ventes suivies',v:data.length,c:'var(--blue)'},{l:'Actes signés',v:signees,c:'var(--green)'},
+    {l:'En cours',v:data.filter(v=>Number(v.etape)<3).length,c:'var(--orange)'},{l:'Commissions',v:fmt(totalComm),c:'var(--pink)'},
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.l}</div><div class="stat-val" style="color:${s.c}">${s.v}</div></div>`).join('');
+  const el=document.getElementById('v-cards');
+  if(!data.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">💰</div><div class="empty-text">Aucune vente suivie<br><span style="font-size:13px">Appuie sur + pour en ajouter</span></div></div>`;return}
+  el.innerHTML=data.map(v=>{
+    const etape=Number(v.etape);
+    const stepsHtml=VENTE_STEPS.map((s,i)=>{
+      const done=i<=etape;const current=i===etape;
+      const dotStyle=`background:${done?VSTEP_COLS[i]:'#e2e8f0'};color:${done?'#fff':'#94a3b8'}`;
+      return`<div class="vente-step"><div class="vente-dot" style="${dotStyle}">${done?'✓':i+1}</div><div style="font-size:9px;color:${done?VSTEP_COLS[i]:'var(--muted)'};text-align:center;margin-top:4px;max-width:55px">${s}</div></div>${i<3?`<div class="vente-line" style="background:${i<etape?VSTEP_COLS[i]:'#e2e8f0'}"></div>`:''}`;
+    }).join('');
+    const dates=[v.d0,v.d1,v.d2,v.d3];
+    const dateLabel=dates[etape]?`📅 ${fmtd(dates[etape])}`:'';
+    return`<div class="vente-card">
+      <div class="card-header"><span class="badge" style="background:${VSTEP_COLS[etape]}22;color:${VSTEP_COLS[etape]}">${VENTE_STEPS[etape]}</span></div>
+      <div class="card-title">${v.adresse}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin:.6rem 0;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:700;color:var(--blue)">${fmt(v.prix)}</span>
+        <span style="font-size:12px;color:var(--pink);font-weight:600">Comm. ${fmt(v.commission)}</span>
+        <span style="font-size:12px;color:var(--muted)">${dateLabel}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;overflow-x:auto;padding-bottom:4px">${stepsHtml}</div>
+      ${v.notes?`<div style="font-size:12px;color:var(--muted);margin-top:8px">${v.notes}</div>`:''}
+      <div class="card-footer"><span></span><div class="card-actions"><button class="act-btn" onclick="editVente('${v.id}')">Modifier</button><button class="act-btn danger" onclick="delVente('${v.id}')">Suppr.</button></div></div>
+    </div>`;
+  }).join('');
+}
+function openVenteModal(v=null){
+  vEditId=v?v.id:null;
+  document.getElementById('mv-title').textContent=v?'Modifier la vente':'Nouvelle vente';
+  document.getElementById('mv-adresse').value=v?.adresse||'';document.getElementById('mv-prix').value=v?.prix||'';document.getElementById('mv-commission').value=v?.commission||'';document.getElementById('mv-etape').value=v?.etape||'0';document.getElementById('mv-d0').value=v?.d0||'';document.getElementById('mv-d1').value=v?.d1||'';document.getElementById('mv-d2').value=v?.d2||'';document.getElementById('mv-d3').value=v?.d3||'';document.getElementById('mv-notes').value=v?.notes||'';
+  document.getElementById('modal-vente').classList.add('open');
+}
+function editVente(id){const v=getVentes().find(x=>x.id===id);if(v)openVenteModal(v)}
+function delVente(id){if(!confirm('Supprimer ?'))return;saveVentes(getVentes().filter(v=>v.id!==id));renderVentes()}
+function saveVente(){
+  const adresse=document.getElementById('mv-adresse').value.trim();
+  if(!adresse)return alert("L'adresse est obligatoire.");
+  const entry={id:vEditId||Date.now().toString(),adresse,prix:Number(document.getElementById('mv-prix').value)||0,commission:Number(document.getElementById('mv-commission').value)||0,etape:document.getElementById('mv-etape').value,d0:document.getElementById('mv-d0').value,d1:document.getElementById('mv-d1').value,d2:document.getElementById('mv-d2').value,d3:document.getElementById('mv-d3').value,notes:document.getElementById('mv-notes').value.trim()};
+  const data=getVentes();
+  if(vEditId)saveVentes(data.map(v=>v.id===vEditId?entry:v));else saveVentes([...data,entry]);
+  closeModal('modal-vente');renderVentes();
+}
+
+// ═══ POINTEUSE ═══
+let timerInterval=null,timerStart_ts=null,timerPaused=false,timerElapsed=0;
+function fmtTimer(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`}
+function timerStart(){
+  if(timerPaused){timerPaused=false;timerStart_ts=Date.now()-timerElapsed*1000;}
+  else{timerStart_ts=Date.now();timerElapsed=0;}
+  timerInterval=setInterval(()=>{timerElapsed=Math.floor((Date.now()-timerStart_ts)/1000);document.getElementById('timer-display').textContent=fmtTimer(timerElapsed)},1000);
+  document.getElementById('btn-start').style.display='none';document.getElementById('btn-pause').style.display='flex';document.getElementById('btn-stop').style.display='flex';
+}
+function timerPause(){
+  clearInterval(timerInterval);timerPaused=true;
+  document.getElementById('btn-start').textContent='▶ Reprendre';document.getElementById('btn-start').style.display='flex';document.getElementById('btn-pause').style.display='none';
+}
+function timerStop(){
+  clearInterval(timerInterval);
+  if(timerElapsed<10){document.getElementById('timer-display').textContent='00:00:00';document.getElementById('btn-start').textContent='▶ Démarrer';document.getElementById('btn-start').style.display='flex';document.getElementById('btn-pause').style.display='none';document.getElementById('btn-stop').style.display='none';timerElapsed=0;timerPaused=false;return}
+  const type=document.getElementById('timer-type').value;
+  const sessions=uload(currentUser,'sessions',[]);
+  sessions.unshift({id:Date.now().toString(),type,duration:timerElapsed,date:new Date().toISOString().split('T')[0]});
+  usave('sessions',sessions);
+  timerElapsed=0;timerPaused=false;
+  document.getElementById('timer-display').textContent='00:00:00';document.getElementById('btn-start').textContent='▶ Démarrer';document.getElementById('btn-start').style.display='flex';document.getElementById('btn-pause').style.display='none';document.getElementById('btn-stop').style.display='none';
+  renderPointeuse();
+}
+function renderPointeuse(){
+  const sessions=uload(currentUser,'sessions',[]);
+  const now=new Date();const weekStart=new Date(now);weekStart.setDate(now.getDate()-now.getDay()+1);weekStart.setHours(0,0,0,0);
+  const thisWeek=sessions.filter(s=>new Date(s.date)>=weekStart);
+  const totalWeek=thisWeek.reduce((a,s)=>a+s.duration,0);
+  const nbSessions=thisWeek.length;
+  const byType={};thisWeek.forEach(s=>{byType[s.type]=(byType[s.type]||0)+s.duration});
+  const topType=Object.keys(byType).sort((a,b)=>byType[b]-byType[a])[0]||'—';
+  document.getElementById('week-stats').innerHTML=[
+    {l:'Cette semaine',v:fmtTimer(totalWeek)},{l:'Sessions',v:nbSessions},{l:'Top canal',v:topType.split(' ')[1]||topType},
+  ].map(s=>`<div class="week-stat"><div class="week-stat-val">${s.v}</div><div class="week-stat-label">${s.l}</div></div>`).join('');
+  document.getElementById('sessions-list').innerHTML=sessions.length?sessions.slice(0,20).map(s=>`<div class="session-item"><div><div style="font-size:13px;font-weight:600">${s.type}</div><div style="font-size:11px;color:var(--muted)">${fmtd(s.date)}</div></div><div class="session-dur">${fmtTimer(s.duration)}</div></div>`).join(''):`<div class="empty-state"><div class="empty-icon">⏱</div><div class="empty-text">Pas encore de session<br><span style="font-size:13px">Lance le chronomètre !</span></div></div>`;
+}
+
+// ═══ FORMATION ═══
+const FORMATION_CHAPTERS=[
+  {num:1,title:'Le métier de mandataire',sub:'Statut, rémunération, journée type',content:`
+<h3>Ce que c'est vraiment</h3>
+<p>Un mandataire immobilier est un agent commercial indépendant qui travaille pour le compte de Decoopman Immobilier (titulaire de la carte T). Tu n'as pas besoin de la carte professionnelle toi-même.</p>
+<p><strong>Ton job :</strong></p><ul><li>Trouver des biens à vendre (= rentrer des mandats)</li><li>Trouver des acheteurs et les mettre en relation</li><li>Accompagner la vente jusqu'à la signature notaire</li></ul>
+<div class="tip-box">💡 La VRAIE valeur d'un mandataire : rentrer des mandats. Sans mandat, rien à vendre.</div>
+<h3>Comment tu es rémunérée</h3>
+<p>Tu touches <strong>69 % du HT</strong> de la commission encaissée par Decoopman, uniquement quand l'acte notaire est signé.</p>
+<div class="warn-box">⚠️ Délai moyen entre mandat signé et paie : 3 à 6 mois. Pas de fixe, pas de commission avant l'acte.</div>
+<h4>Exemple concret</h4>
+<p>Maison à 150 000 € · Commission 5% HT = 7 500 € HT · Ta part (69%) = <strong>5 175 € HT</strong></p>
+<h3>Ta journée type</h3>
+<ul><li>8h-9h : Veille Le Bon Coin, repérage FSBO</li><li>9h-12h : Prospection terrain, appels, MPs</li><li>12h-14h : Administratif, relances</li><li>14h-17h : RDV terrain, R1, visites</li><li>17h-19h : Callbacks, contenu réseaux</li></ul>
+<div class="warn-box">⚠️ Le piège : le faux travail. Si tu n'as parlé à personne aujourd'hui, tu n'as pas travaillé. Règle : 70 % de ton temps en contact humain.</div>
+<h3>Obligations légales</h3>
+<ul><li>Inscription RSAC obligatoire</li><li>Attestation collaborateur Decoopman à présenter à tout client</li><li>Formation Loi ALUR : 14h/an obligatoire</li><li>Tu ne peux JAMAIS encaisser d'argent toi-même</li><li>Tous les mandats sont au nom de Decoopman Immobilier</li></ul>`},
+  {num:2,title:'L\'équipe et notre marché',sub:'Qui on est, secteur, prix de référence',content:`
+<h3>L'équipe</h3>
+<ul><li><strong>Mickaël Decoopman</strong> — Le père, fondateur. 06 80 84 17 36. 10 ans de métier.</li><li><strong>Morgan Decoopman</strong> — Le fils, gérant. 06 25 47 56 07. Ton interlocuteur principal.</li><li><strong>Mégane Decoopman</strong> — La sœur. 06 48 92 20 11. Backup et échanges dossiers.</li></ul>
+<div class="tip-box">💡 Ce qui nous différencie : famille locale, indépendants, 4,8/5 Google (100+ avis), on se déplace TOUJOURS chez le client. On ne dit jamais "venez à l'agence".</div>
+<h3>Ton secteur prioritaire</h3>
+<p>Haillicourt · Nœux-les-Mines · Béthune · Barlin · Hersin-Coupigny · Verquin · Beuvry</p>
+<h3>Prix de référence</h3>
+<ul><li>Bruay-la-Buissière : ~1 380 €/m²</li><li>Divion : ~1 250 €/m²</li><li>Houdain : ~1 420 €/m²</li><li>Haillicourt : ~1 390 €/m²</li></ul>
+<div class="warn-box">⚠️ Ces chiffres sont des moyennes. Le VRAI prix dépend de : l'état réel, le DPE, la rue précise, le type de bien.</div>`},
+  {num:3,title:'La prospection',sub:'Les 8 canaux qui marchent vraiment',content:`
+<h3>Canal 1 — Porte-à-porte ciblé (le plus rentable)</h3>
+<p>Méthode "effet voisin" : après une vente, tu fais le tour des 30 maisons voisines.</p>
+<div class="script-box">« Bonjour, je suis Léa de Decoopman Immobilier. Je passe vous prévenir qu'on vient de vendre la maison de la rue X. Ça fait monter la cote de votre quartier. Si vous pensez à vendre, l'estimation est offerte. Voici ma carte, bonne journée ! »</div>
+<p>Bon timing : Mardi-Samedi 17h-19h · Samedi 10h-12h. Éviter lundi et midi.</p>
+<h3>Canal 2 — FSBO (particuliers qui vendent seuls)</h3>
+<p>Le Bon Coin, PAP.fr, Facebook Marketplace. Attendre la 2e à 6e semaine de mise en vente.</p>
+<div class="script-box">« Bonjour, c'est bien vous qui vendez rue X ? Je suis Léa de Decoopman — je ne vous démarcherai pas de force. Je voulais savoir où vous en étiez. Si vous voulez un avis pro, je suis sur le secteur, c'est gratuit et sans engagement. »</div>
+<h3>Canal 3 — Les expirés</h3>
+<p>Mandat arrivé à terme chez un confrère sans vendre. Tu attends 1 semaine, puis tu contactes.</p>
+<h3>Canal 4 — Recommandations clients</h3>
+<p>À chaque compromis et à chaque acte : demande une recommandation. 80% de chances de signer au R1.</p>
+<h3>Canaux 5-8</h3>
+<ul><li>Notaires : RDV de présentation + entretien régulier</li><li>Commerçants locaux : cartes de visite, mise en avant réseaux</li><li>Digital : Facebook + Instagram (voir ch.4)</li><li>Réseau personnel : préviens TOUT le monde que tu fais de l'immo</li></ul>
+<div class="tip-box">💡 Règle d'or : la prospection c'est du SEMIS, pas de la vente. Sur 100 contacts : 5 rappelleront dans 6 mois, 2 deviendront des mandats.</div>`},
+  {num:4,title:'Réseaux sociaux',sub:'Facebook, Instagram, méthode Decoopman',content:`
+<h3>Les 3 piliers de contenu</h3>
+<ul><li>30% Expert local (prix au m², marché du mois)</li><li>30% Conseil vendeur (erreurs à éviter, DPE...)</li><li>30% Catalogue biens (mandats, ventes)</li><li>10% Coulisses / humain</li></ul>
+<h3>Calendrier</h3>
+<ul><li>Lundi 8h-10h : Expert local</li><li>Mercredi : Catalogue ou Coulisses</li><li>Vendredi 12h-20h : Conseil vendeur</li><li>1 story Facebook par jour</li></ul>
+<h3>Les CTA qui marchent</h3>
+<div class="script-box">« Commentez ESTIMATION, je vous envoie une fourchette sous 24h »<br>« Envoyez-moi l'adresse en MP, je vous dis combien ça vaut »<br>« Enregistrez ce post si vous pensez vendre dans les 12 mois »</div>
+<div class="warn-box">⚠️ Ne JAMAIS booster depuis l'app iPhone — Apple prend 30% de frais. Toujours booser via Safari sur business.facebook.com</div>
+<h3>Ce qu'on ne fait PAS</h3>
+<ul><li>Pas de Reels en face caméra</li><li>Pas de CTA mous ("contactez-nous")</li><li>Pas de superlatifs creux ("d'exception", "unique")</li><li>Pas de faux témoignages</li></ul>`},
+  {num:5,title:'Le premier contact',sub:'Scripts MP, appel, relance',content:`
+<h3>Réponse à un MP "ESTIMATION" (répondre en moins d'1h)</h3>
+<div class="script-box">« Bonjour [Prénom], merci pour votre message 🙏<br>Je suis Léa de Decoopman Immobilier.<br>Pour vous donner une fourchette :<br>1️⃣ Adresse précise ?<br>2️⃣ Surface habitable ?<br>3️⃣ Nombre de chambres ?<br>4️⃣ Jardin / garage ?<br>5️⃣ État général ?<br>Je vous envoie une 1ère estimation par MP, et si elle vous parle, je passe chez vous, c'est gratuit et sans engagement. »</div>
+<h3>Relance prospect tiède (5-7 jours sans réponse)</h3>
+<div class="script-box">« Bonjour [Prénom], je vous contacte juste pour savoir où vous en êtes. Aucune pression. Si le projet n'est plus d'actualité, dites-le-moi. Belle journée 🙏 Léa »</div>
+<h3>Premier appel téléphonique</h3>
+<div class="script-box">« Bonjour [Prénom], c'est Léa de Decoopman. Vous avez 5 minutes ? »<br>[Écoute, prend des notes]<br>« Vous êtes plus dispo en semaine en fin de journée ou le samedi ? »</div>
+<div class="tip-box">💡 Termine TOUJOURS par un choix fermé entre 2 options. Jamais "vous voulez qu'on se voie ?" → toujours "Mardi 18h ou samedi 10h ?"</div>`},
+  {num:6,title:'Le R1 estimation',sub:'Décrocher le mandat — déroulé complet',content:`
+<h3>Objectif : repartir avec un mandat signé (idéalement exclusif, 3 mois)</h3>
+<h3>Préparation la veille</h3>
+<ul><li>4 ventes comparables RÉELLES dans le quartier (DVF gratuit)</li><li>Fourchette de prix argumentée</li><li>Plaquette imprimée avec logo + 4,8/5 Google</li><li>Mandats vierges (exclusif, semi-exclusif, simple)</li></ul>
+<h3>Déroulé (1h30 à 2h)</h3>
+<ul><li>Phase 1 — Arrivée (5-10 min) : à l'heure pile, refuse le café pour l'instant</li><li>Phase 2 — Visite (25-30 min) : tour de chaque pièce, photos, mesures</li><li>Phase 3 — Conversation (30-40 min) : écoute, crée le lien</li><li>Phase 4 — Dossier (15-20 min) : présente les comparables, donne UN prix</li><li>Phase 5 — Closing (10-15 min) : pose le mandat sur la table, demande la signature</li></ul>
+<div class="tip-box">💡 Un R1 de 1h30-2h c'est bon signe. Le mandat se signe sur la confiance. La confiance se construit dans la conversation, pas en survolant.</div>
+<h3>Closing</h3>
+<div class="script-box">« Si on est d'accord sur le prix, je vous propose qu'on signe aujourd'hui. Dès demain je lance les photos et la diffusion. On part sur un exclusif 3 mois — pas de frais d'avance, commission 5% uniquement si je vends. »</div>
+<h3>Les 7 objections fréquentes</h3>
+<ul><li>"Votre prix est trop bas" → Montrer les 4 comparables réels</li><li>"5% c'est cher" → Uniquement si vendu, 0 risque financier pour eux</li><li>"Je préfère un mandat simple" → En exclusif tu investis vraiment, en simple personne ne le fait</li><li>"Je vais essayer seul" → Max 2 mois, au-delà le bien vieillit sur les portails</li><li>"Je veux réfléchir" → "Sur quoi avez-vous besoin de réfléchir ?"</li></ul>`},
+  {num:7,title:'La mise en vente',sub:'Du mandat aux photos à l\'annonce',content:`
+<h3>Infos obligatoires à récupérer pour CHAQUE propriétaire</h3>
+<ul><li>Nom de famille</li><li>Prénom</li><li>Adresse postale complète</li><li>Adresse mail</li><li>Numéro de téléphone</li></ul>
+<div class="warn-box">⚠️ Ces 5 infos sont obligatoires juridiquement (loi Hoguet). S'il y a plusieurs propriétaires, tout récupérer pour chacun.</div>
+<h3>Les photos — règle absolue</h3>
+<p>70% des acheteurs décident de visiter en regardant UNIQUEMENT les photos. Des photos bâclées = -10 000€ minimum.</p>
+<ul><li>Trépied + télécommande Bluetooth</li><li>Mode HDR activé, format 4:3</li><li>Pas de flash, jamais</li><li>Préparer le bien : désencombrer, dépersonnaliser, nettoyer</li></ul>
+<h3>Structure d'une annonce Decoopman</h3>
+<div class="script-box">TITRE : COMMUNE — Type, surface, 1 atout majeur<br>Ex : "Bruay — Maison 1930 rénovée, 105m², jardin, garage"<br><br>ACCROCHE : 2-3 lignes, une émotion, une singularité<br>DESCRIPTION : visite virtuelle pièce par pièce<br>POINTS FORTS : ✓ DPE · ✓ Toiture · ✓ 0 travaux<br>PRIX : XXX € HAI (5% HT charge acquéreur)</div>
+<h3>Diffusion</h3>
+<p>Site Decoopman + Bien'ici + Le Bon Coin + Logic-Immo + Facebook Marketplace + Page Facebook + Instagram</p>
+<div class="tip-box">💡 Point vendeur chaque vendredi : vues portails, demandes de visite, retours, actions semaine suivante.</div>`},
+  {num:8,title:'Les visites et la négociation',sub:'Filtrer, visiter, négocier',content:`
+<h3>Pré-qualification obligatoire</h3>
+<p>Avant toute visite, poser ces questions :</p>
+<ul><li>Primo-accédant ou bien à revendre ?</li><li>Accord de financement ? Quelle banque ?</li><li>Budget total (frais notaire inclus) ?</li><li>Délai pour acheter ?</li></ul>
+<div class="warn-box">⚠️ Si l'acheteur ne peut pas donner son budget précis, son délai et le nom de sa banque : ce n'est pas un acheteur sérieux à ce stade.</div>
+<h3>Déroulé d'une visite</h3>
+<ul><li>Arrive 10 min avant : ouvre tout, allumes lumières, aères</li><li>Commence par le salon (pièce coup de cœur)</li><li>Laisse 30 sec de silence à l'entrée (projection)</li><li>Finis TOUJOURS par l'extérieur (jardin, vue)</li><li>Rappelle l'acheteur le lendemain pour retour à froid</li></ul>
+<h3>La négociation</h3>
+<ul><li>Toute offre DOIT être écrite (mail ou formulaire signé)</li><li>Tu transmets TOUTES les offres au vendeur (obligation légale)</li><li>Ne jamais révéler le prix d'une autre offre</li><li>Contre-offre classique : split 50% entre les deux prix</li></ul>`},
+  {num:9,title:'Du compromis à la signature',sub:'Les étapes, délais, ton rôle',content:`
+<h3>Étape 1 — Le compromis</h3>
+<ul><li>Délai : signé sous 7-15 jours après acceptation offre</li><li>Séquestre : 5-10% du prix versé au notaire</li><li>Délai rétractation : 10 jours calendaires pour l'acheteur</li></ul>
+<h3>Étape 2 — Financement (45-60 jours)</h3>
+<p>Suit l'acheteur toutes les 2 semaines. Récupère l'accord de prêt définitif dès qu'il l'a, transmets-le au notaire.</p>
+<div class="warn-box">⚠️ Si le financement tombe, tu repars à zéro après 45-60 jours de blocage. Vérifier le dossier acheteur AVANT le compromis.</div>
+<h3>Étape 3 — Entre compromis et acte (60-90 jours)</h3>
+<ul><li>Point vendeur tous les 15 jours</li><li>Appel notaire tous les 15 jours</li></ul>
+<h3>Étape 4 — Pré-visite acheteur (la veille de l'acte)</h3>
+<p>Tour du bien avec l'acheteur pour vérifier l'état. Relevé des compteurs. PV de pré-visite à signer.</p>
+<h3>Étape 5 — L'acte authentique</h3>
+<p>RDV chez le notaire, 1h-1h30. Lecture de l'acte, signatures, remise des clés. Commission versée à Decoopman sous 7-15 jours après l'acte.</p>
+<div class="tip-box">💡 Après l'acte : mail de remerciement + demande avis Google + photo clés remises pour les réseaux + rappel à 30 jours et 6 mois.</div>`},
+  {num:10,title:'Style Decoopman',sub:'Notre ton, nos annonces, nos règles',content:`
+<h3>Notre ton de voix</h3>
+<ul><li>Famille, local, humain, sincère</li><li>Direct, sans langue de bois</li><li>Honnête sur les chiffres, même quand c'est pas brillant</li><li>Expert mais accessible, pas de jargon non expliqué</li></ul>
+<h3>Ce qu'on évite ABSOLUMENT</h3>
+<ul><li>"D'exception", "unique", "incontournable" → vide</li><li>"Venez à l'agence" → on n'a pas d'agence physique</li><li>CTA mous : "contactez-nous", "n'hésitez pas"</li><li>Promesses irréalistes</li><li>Plus de 2 emojis par post</li></ul>
+<h3>Les erreurs à NE JAMAIS faire</h3>
+<ul><li>❌ Encaisser de l'argent en direct (illégal)</li><li>❌ Signer un mandat à ton nom</li><li>❌ Promettre un prix qu'on ne peut pas tenir</li><li>❌ Diffuser sans diagnostics obligatoires</li><li>❌ Visiter seule avec un acheteur inconnu sans pré-qualification</li><li>❌ Booster une pub depuis l'app iPhone</li><li>❌ Inventer un avis client</li></ul>
+<h3>Contacts utiles</h3>
+<ul><li>Morgan : 06 25 47 56 07</li><li>Mickaël : 06 80 84 17 36</li><li>Mégane : 06 48 92 20 11</li></ul>
+<div class="tip-box">💡 Ce qui fait la différence : la régularité (10 contacts/jour), l'honnêteté, la connaissance du terrain, la patience. Le reste s'apprend.</div>`}
+];
+
+const QUICK_CARDS=[
+  {icon:'📞',title:'Scripts contacts',sub:'MP, appel, relance',content:`<h3>MP "ESTIMATION" (répondre < 1h)</h3><div class="script-box">« Bonjour [Prénom], merci 🙏 Je suis Léa de Decoopman. Pour vous donner une fourchette j'aurais besoin de : adresse, surface, chambres, jardin/garage, état général. Je passe chez vous gratuitement si ça vous convient. »</div><h3>Relance (5-7 jours)</h3><div class="script-box">« Bonjour, juste pour savoir où vous en êtes. Aucune pression. Dites-moi si le projet n'est plus d'actualité. 🙏 Léa »</div><h3>Fermer un RDV</h3><div class="tip-box">Terminer TOUJOURS par un choix fermé : « Mardi 18h ou samedi 10h ? » — jamais « vous voulez qu'on se voie ? »</div>`},
+  {icon:'🏠',title:'R1 — les clés',sub:'Checklist et closing',content:`<h3>Checklist préparation</h3><ul><li>4 ventes comparables réelles (DVF)</li><li>Plaquette imprimée logo + 4,8/5 Google</li><li>3 types de mandats vierges</li></ul><h3>Questions R1</h3><ul><li>Pourquoi vous vendez ?</li><li>Quel délai idéal ?</li><li>Déjà fait estimer ? Par qui ?</li><li>Votre prix idéal ?</li><li>Projet d'achat ensuite ?</li></ul><h3>Closing</h3><div class="script-box">« Si on est d'accord, je vous propose qu'on signe aujourd'hui. Exclusif 3 mois, 0 frais d'avance, 5% uniquement si je vends. »</div>`},
+  {icon:'⚖️',title:'Objections R1',sub:'Les 5 réponses clés',content:`<h4>"Prix trop bas"</h4><p>Montrer les 4 comparables réels. Préférer un prix honnête à un prix flatteur qui bloque 12 mois.</p><h4>"5% c'est cher"</h4><p>Uniquement si vendu. 0 risque financier. Vendre seul = -10% sur le prix final en moyenne.</p><h4>"Mandat simple"</h4><p>En exclusif tu investis (photos pro, boosts). En simple, personne ne le fait vraiment.</p><h4>"Je vais essayer seul"</h4><p>Max 2 mois. Au-delà le bien vieillit sur les portails et les acheteurs négocient plus dur.</p><h4>"Je veux réfléchir"</h4><p>« Sur quoi avez-vous besoin de réfléchir ? Le prix ? La commission ? Le timing ? »</p>`},
+  {icon:'📋',title:'Prospection',sub:'Les canaux qui marchent',content:`<h3>Top 3 canaux</h3><ul><li>🚪 Porte-à-porte ciblé (effet voisin) — le plus rentable</li><li>💻 FSBO Le Bon Coin / PAP (attendre semaine 2-6)</li><li>👥 Recommandations (80% de taux de signature R1)</li></ul><h3>Règle d'or</h3><div class="tip-box">La prospection c'est du SEMIS. Tu ne convaincs pas — tu te positionnes pour le jour où ils décideront de vendre. Sur 100 contacts : 5 rappelleront, 2 deviendront des mandats.</div><h3>Timing porte-à-porte</h3><p>✅ Mar-Sam 17h-19h · Sam 10h-12h<br>❌ Lundi · Midi · Dimanche</p>`},
+];
+
+function renderFormation(){
+  document.getElementById('quick-cards').innerHTML=QUICK_CARDS.map((c,i)=>`<div class="quick-card" onclick="openChapter('quick',${i})"><div class="quick-card-icon">${c.icon}</div><div class="quick-card-title">${c.title}</div><div class="quick-card-sub">${c.sub}</div></div>`).join('');
+  document.getElementById('chapters-list').innerHTML=FORMATION_CHAPTERS.map(c=>`<div class="chapter-item" onclick="openChapter('full',${c.num-1})"><div class="chapter-num">${c.num}</div><div><div class="chapter-title">${c.title}</div><div class="chapter-sub">${c.sub}</div></div><div class="chapter-arrow">›</div></div>`).join('');
+}
+
+function openChapter(type,idx){
+  const c=type==='quick'?QUICK_CARDS[idx]:FORMATION_CHAPTERS[idx];
+  const title=type==='quick'?c.title:`Ch. ${c.num} — ${c.title}`;
+  document.getElementById('chapter-topbar-title').textContent=title;
+  document.getElementById('chapter-body').innerHTML=c.content;
+  showScreen('screen-chapter');
+}
+function closeChapter(){showScreen('screen-app')}
+
+// ═══ FAB + MODALS ═══
+function openAddModal(){
+  if(currentTab==='mandats')openMandatModal();
+  else if(currentTab==='prospection')openContactModal();
+  else if(currentTab==='ventes')openVenteModal();
+  else if(currentTab==='objectifs')openObjModal();
+  else if(currentTab==='todo')openTodoModal();
+  else openContactModal();
+}
+// ═══ OBJECTIFS ═══
+let objPeriod='jour', objEditId=null, progressObjId=null;
+const getObjectifs=()=>uload(currentUser,'objectifs',[]);
+const saveObjectifs=d=>usave('objectifs',d);
+const PERIOD_LABELS={jour:'Journalier',semaine:'Hebdomadaire',mois:'Mensuel',annee:'Annuel'};
+
+function setObjPeriod(p){
+  objPeriod=p;
+  document.querySelectorAll('.obj-tab').forEach((t,i)=>t.classList.toggle('active',['jour','semaine','mois','annee'][i]===p));
+  renderObjectifs();
+}
+
+function renderObjectifs(){
+  const all=getObjectifs();
+  const data=all.filter(o=>o.period===objPeriod);
+  const total=data.length;
+  const done=data.filter(o=>o.actuel>=o.cible).length;
+  const pct=total?Math.round(done/total*100):0;
+  document.getElementById('obj-progress-bar').innerHTML=total?`
+    <div style="background:#fff;border-radius:14px;padding:1rem;border:1.5px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:700;color:var(--blue)">${PERIOD_LABELS[objPeriod]}</span>
+        <span style="font-size:13px;font-weight:700;color:var(--pink)">${done}/${total} atteints</span>
+      </div>
+      <div class="obj-bar-wrap"><div class="obj-bar-fill${pct>=100?' done':''}" style="width:${pct}%"></div></div>
+      <div style="text-align:right;font-size:12px;color:var(--muted);margin-top:4px">${pct}%</div>
+    </div>`:'' ;
+  const el=document.getElementById('obj-list');
+  if(!data.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div><div class="empty-text">Aucun objectif ${PERIOD_LABELS[objPeriod].toLowerCase()}<br><span style="font-size:13px">Appuie sur + pour en créer un</span></div></div>`;return}
+  el.innerHTML=data.map(o=>{
+    const pct2=o.cible?Math.min(100,Math.round(o.actuel/o.cible*100)):0;
+    const done2=o.actuel>=o.cible;
+    return`<div class="obj-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1"><div class="obj-title">${done2?'✅ ':''}${o.texte}</div><div class="obj-meta">${PERIOD_LABELS[o.period]} · Cible : ${o.cible} ${o.unite||''}</div></div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="act-btn" onclick="openProgressModal('${o.id}')" style="font-size:11px;padding:5px 8px">Màj</button>
+          <button class="act-btn" onclick="editObjectif('${o.id}')" style="font-size:11px;padding:5px 8px">✎</button>
+          <button class="act-btn danger" onclick="delObjectif('${o.id}')" style="font-size:11px;padding:5px 8px">✕</button>
+        </div>
+      </div>
+      <div class="obj-bar-wrap" style="margin-top:.75rem"><div class="obj-bar-fill${done2?' done':''}" style="width:${pct2}%"></div></div>
+      <div class="obj-nums"><span>${o.actuel||0} ${o.unite||''}</span><span style="color:${done2?'var(--green)':'var(--muted)'}">${pct2}%</span><span>${o.cible} ${o.unite||''}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function openObjModal(o=null){
+  objEditId=o?o.id:null;
+  document.getElementById('mo-title').textContent=o?'Modifier l\'objectif':'Nouvel objectif';
+  document.getElementById('mo-texte').value=o?.texte||'';
+  document.getElementById('mo-period').value=o?.period||objPeriod;
+  document.getElementById('mo-cible').value=o?.cible||'';
+  document.getElementById('mo-unite').value=o?.unite||'';
+  document.getElementById('modal-objectif').classList.add('open');
+}
+function editObjectif(id){openObjModal(getObjectifs().find(o=>o.id===id))}
+function delObjectif(id){if(!confirm('Supprimer cet objectif ?'))return;saveObjectifs(getObjectifs().filter(o=>o.id!==id));renderObjectifs()}
+function saveObjectif(){
+  const texte=document.getElementById('mo-texte').value.trim();
+  if(!texte)return alert('Décris ton objectif.');
+  const old=getObjectifs();
+  const existing=objEditId?old.find(o=>o.id===objEditId):null;
+  const entry={id:objEditId||Date.now().toString(),texte,period:document.getElementById('mo-period').value,cible:Number(document.getElementById('mo-cible').value)||0,unite:document.getElementById('mo-unite').value.trim(),actuel:existing?existing.actuel:0};
+  if(objEditId)saveObjectifs(old.map(o=>o.id===objEditId?entry:o));else saveObjectifs([...old,entry]);
+  closeModal('modal-objectif');renderObjectifs();
+}
+function openProgressModal(id){
+  progressObjId=id;
+  const o=getObjectifs().find(x=>x.id===id);
+  document.getElementById('progress-obj-name').textContent=o?o.texte:'';
+  document.getElementById('prog-val').value=o?.actuel||0;
+  document.getElementById('modal-progress').classList.add('open');
+}
+function saveProgress(){
+  const val=Number(document.getElementById('prog-val').value)||0;
+  saveObjectifs(getObjectifs().map(o=>o.id===progressObjId?{...o,actuel:val}:o));
+  closeModal('modal-progress');renderObjectifs();
+}
+
+// ═══ TODO ═══
+let todoEditId=null, todoFilter='toutes';
+const getTodos=()=>uload(currentUser,'todos',[]);
+const saveTodos=d=>usave('todos',d);
+const PRIO_COLORS={haute:'prio-haute',moyenne:'prio-moyenne',basse:'prio-basse'};
+const PRIO_LABELS={haute:'🔴 Haute',moyenne:'🟡 Moyenne',basse:'🟢 Basse'};
+const CAT_LABELS={prospection:'Prospection',mandat:'Mandat',vente:'Vente',admin:'Administratif',perso:'Personnel'};
+
+function renderTodo(){
+  const all=getTodos();
+  const total=all.length, done=all.filter(t=>t.done).length, urgent=all.filter(t=>!t.done&&t.date&&daysFrom(t.date)<=1&&daysFrom(t.date)>=0).length;
+  document.getElementById('todo-stats').innerHTML=[
+    {l:'Total tâches',v:total,c:'var(--blue)'},{l:'Terminées',v:done,c:'var(--green)'},
+    {l:'Urgentes',v:urgent,c:urgent>0?'var(--red)':'var(--blue)'},{l:'En attente',v:total-done,c:'var(--orange)'},
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.l}</div><div class="stat-val" style="color:${s.c}">${s.v}</div></div>`).join('');
+  const filters=['toutes','en attente','terminées','haute','moyenne','basse'];
+  document.getElementById('todo-filters').innerHTML=filters.map(f=>`<button class="filter-chip${todoFilter===f?' active':''}" onclick="setTodoFilter('${f}')">${f.charAt(0).toUpperCase()+f.slice(1)}</button>`).join('');
+  let rows=all;
+  if(todoFilter==='en attente')rows=all.filter(t=>!t.done);
+  else if(todoFilter==='terminées')rows=all.filter(t=>t.done);
+  else if(['haute','moyenne','basse'].includes(todoFilter))rows=all.filter(t=>t.priorite===todoFilter&&!t.done);
+  // Sort: undone first, then by date, then by priority
+  rows=rows.sort((a,b)=>{if(a.done!==b.done)return a.done?1:-1;const pa={haute:0,moyenne:1,basse:2};return(pa[a.priorite]||1)-(pa[b.priorite]||1)});
+  const el=document.getElementById('todo-list');
+  if(!rows.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">Aucune tâche<br><span style="font-size:13px">Appuie sur + pour en ajouter</span></div></div>`;return}
+  el.innerHTML=rows.map(t=>{
+    const overdue=!t.done&&t.date&&daysFrom(t.date)<0;
+    const today2=!t.done&&t.date&&daysFrom(t.date)===0;
+    return`<div class="todo-item${t.done?' done-item':''}" style="${overdue?'border-color:#fca5a5;background:#fff5f5':''}${today2?'border-color:#fcd34d;background:#fffbeb':''}">
+      <div class="todo-check${t.done?' checked':''}" onclick="toggleTodo('${t.id}')">${t.done?'✓':''}</div>
+      <div class="todo-body">
+        <div class="todo-text${t.done?' done-text':''}">${t.texte}</div>
+        <div class="todo-meta">
+          <span class="badge ${PRIO_COLORS[t.priorite]||''}" style="font-size:10px;padding:2px 8px">${PRIO_LABELS[t.priorite]||''}</span>
+          <span class="cat-badge">${CAT_LABELS[t.cat]||t.cat||''}</span>
+          ${t.date?`<span style="font-size:11px;color:${overdue?'var(--red)':today2?'var(--orange)':'var(--muted)'}">${overdue?'⚠ ':today2?'⏰ ':''}${fmtd(t.date)}</span>`:''}
+        </div>
+        ${t.notes?`<div style="font-size:12px;color:var(--muted);margin-top:4px">${t.notes}</div>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+        <button class="act-btn" onclick="editTodo('${t.id}')" style="font-size:11px;padding:4px 8px">✎</button>
+        <button class="todo-del" onclick="delTodo('${t.id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function setTodoFilter(f){todoFilter=f;renderTodo()}
+function toggleTodo(id){const todos=getTodos();saveTodos(todos.map(t=>t.id===id?{...t,done:!t.done}:t));renderTodo()}
+function openTodoModal(t=null){
+  todoEditId=t?t.id:null;
+  document.getElementById('mt-title').textContent=t?'Modifier la tâche':'Nouvelle tâche';
+  document.getElementById('mt-texte').value=t?.texte||'';
+  document.getElementById('mt-priorite').value=t?.priorite||'moyenne';
+  document.getElementById('mt-date').value=t?.date||'';
+  document.getElementById('mt-cat').value=t?.cat||'prospection';
+  document.getElementById('mt-notes').value=t?.notes||'';
+  document.getElementById('modal-todo').classList.add('open');
+}
+function editTodo(id){openTodoModal(getTodos().find(t=>t.id===id))}
+function delTodo(id){if(!confirm('Supprimer cette tâche ?'))return;saveTodos(getTodos().filter(t=>t.id!==id));renderTodo()}
+function saveTodo(){
+  const texte=document.getElementById('mt-texte').value.trim();
+  if(!texte)return alert('Décris la tâche.');
+  const entry={id:todoEditId||Date.now().toString(),texte,priorite:document.getElementById('mt-priorite').value,date:document.getElementById('mt-date').value,cat:document.getElementById('mt-cat').value,notes:document.getElementById('mt-notes').value.trim(),done:todoEditId?(getTodos().find(t=>t.id===todoEditId)?.done||false):false};
+  const data=getTodos();
+  if(todoEditId)saveTodos(data.map(t=>t.id===todoEditId?entry:t));else saveTodos([...data,entry]);
+  closeModal('modal-todo');renderTodo();
+}
+
+// ═══ COMMISSIONS ═══
+function renderCommissions(){
+  const mandats=uload(currentUser,'mandats',[]);
+  const ventes=uload(currentUser,'ventes',[]);
+  const commEnAttente=mandats.filter(m=>m.etape==='Vendu').reduce((s,m)=>s+calcComm(m),0);
+  const commEncaissees=ventes.filter(v=>Number(v.etape)===3).reduce((s,v)=>s+(v.commission||0),0);
+  const commPotentielles=mandats.filter(m=>m.etape!=='Vendu').reduce((s,m)=>s+calcComm(m),0);
+  // Part Decoopman 69%
+  const partLea=commEncaissees*0.69;
+  const partLeaAttente=commEnAttente*0.69;
+  document.getElementById('comm-stats').innerHTML=[
+    {l:'Encaissées',v:fmt(commEncaissees),c:'var(--green)'},
+    {l:'En attente',v:fmt(commEnAttente),c:'var(--orange)'},
+    {l:'Potentielles',v:fmt(commPotentielles),c:'var(--blue)'},
+    {l:'Ma part (69%)',v:fmt(partLea),c:'var(--pink)'},
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.l}</div><div class="stat-val" style="color:${s.c};font-size:18px">${s.v}</div></div>`).join('');
+  // Chart par mois
+  const months=['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+  const currentYear=new Date().getFullYear();
+  const monthlyData=Array(12).fill(0);
+  ventes.filter(v=>Number(v.etape)===3&&v.d3).forEach(v=>{
+    const d=new Date(v.d3);
+    if(d.getFullYear()===currentYear)monthlyData[d.getMonth()]+=(v.commission||0);
+  });
+  const maxVal=Math.max(...monthlyData,1);
+  document.getElementById('comm-chart').innerHTML=`
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Année ${currentYear}</div>
+    <div class="comm-bar">
+      ${monthlyData.map((v,i)=>`<div class="comm-bar-col"><div class="comm-bar-val">${v?Math.round(v/1000)+'k':''}</div><div class="comm-bar-fill" style="height:${v/maxVal*90}px"></div><div class="comm-bar-label">${months[i].slice(0,1)}</div></div>`).join('')}
+    </div>
+    <div style="text-align:center;font-size:13px;font-weight:700;color:var(--blue);margin-top:8px">Total ${currentYear} : ${fmt(monthlyData.reduce((a,b)=>a+b,0))}</div>
+  `;
+  // Liste détaillée
+  const allItems=[
+    ...ventes.map(v=>({type:'vente',adresse:v.adresse,montant:v.commission||0,statut:Number(v.etape)===3?'Encaissée':'En cours',date:v.d3||v.d0,etape:Number(v.etape)})),
+    ...mandats.filter(m=>m.etape!=='Vendu').map(m=>({type:'mandat',adresse:m.adresse,montant:calcComm(m),statut:'Potentiel ('+m.etape+')',date:m.dentree,etape:-1})),
+  ].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(!allItems.length){document.getElementById('comm-list').innerHTML=`<div class="empty-state"><div class="empty-icon">💶</div><div class="empty-text">Aucune commission à afficher</div></div>`;return}
+  document.getElementById('comm-list').innerHTML=allItems.map(it=>{
+    const col=it.statut==='Encaissée'?'var(--green)':it.statut.includes('Potentiel')?'var(--blue)':'var(--orange)';
+    const bg=it.statut==='Encaissée'?'#dcfce7':it.statut.includes('Potentiel')?'#e8eef7':'#fef3c7';
+    return`<div class="comm-row">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.adresse}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtd(it.date)}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;margin-left:10px">
+        <div style="font-size:15px;font-weight:700;color:var(--pink)">${fmt(it.montant)}</div>
+        <span class="comm-row-status" style="background:${bg};color:${col}">${it.statut}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══ BADGES & GAMIFICATION ═══
+const BADGES=[
+  {id:'first_contact',icon:'👋',name:'Premier contact',desc:'Ajoute ton 1er prospect',check:d=>d.contacts.length>=1},
+  {id:'first_mandat',icon:'🏠',name:'Premier mandat',desc:'Signe ton 1er mandat',check:d=>d.mandats.length>=1},
+  {id:'first_vente',icon:'🎉',name:'Première vente',desc:'Conclus ta 1ère vente',check:d=>d.ventes.filter(v=>Number(v.etape)===3).length>=1},
+  {id:'10_contacts',icon:'📞',name:'Réseauteur',desc:'Atteins 10 prospects',check:d=>d.contacts.length>=10,prog:d=>Math.min(100,d.contacts.length*10)},
+  {id:'50_contacts',icon:'🌟',name:'Pro du contact',desc:'Atteins 50 prospects',check:d=>d.contacts.length>=50,prog:d=>Math.min(100,d.contacts.length*2)},
+  {id:'5_mandats',icon:'📋',name:'Collectionneur',desc:'Signe 5 mandats',check:d=>d.mandats.length>=5,prog:d=>Math.min(100,d.mandats.length*20)},
+  {id:'3_ventes',icon:'💰',name:'Vendeur confirmé',desc:'Conclus 3 ventes',check:d=>d.ventes.filter(v=>Number(v.etape)===3).length>=3,prog:d=>Math.min(100,d.ventes.filter(v=>Number(v.etape)===3).length*33)},
+  {id:'10h_prosp',icon:'⏱️',name:'Bourreau de travail',desc:'Cumule 10h de prospection',check:d=>d.totalSec>=36000,prog:d=>Math.min(100,d.totalSec/36000*100)},
+  {id:'5_objectifs',icon:'🎯',name:'Stratège',desc:'Atteins 5 objectifs',check:d=>d.objectifsAtteints>=5,prog:d=>Math.min(100,d.objectifsAtteints*20)},
+  {id:'streak_7',icon:'🔥',name:'Régularité',desc:'7 jours de suite actifs',check:d=>d.streak>=7,prog:d=>Math.min(100,d.streak/7*100)},
+  {id:'commission_5k',icon:'💎',name:'Cap des 5k',desc:'5 000€ de commissions',check:d=>d.totalComm>=5000,prog:d=>Math.min(100,d.totalComm/5000*100)},
+  {id:'commission_20k',icon:'🏆',name:'Cap des 20k',desc:'20 000€ de commissions',check:d=>d.totalComm>=20000,prog:d=>Math.min(100,d.totalComm/20000*100)},
+];
+const LEVELS=[
+  {min:0,title:'Débutante',color:'#94a3b8'},
+  {min:3,title:'Apprentie',color:'#60a5fa'},
+  {min:6,title:'Confirmée',color:'#a78bfa'},
+  {min:9,title:'Experte',color:'#f59e0b'},
+  {min:12,title:'Légende',color:'#ef4444'},
+];
+
+function calcXP(){
+  const data={
+    contacts:uload(currentUser,'contacts',[]),
+    mandats:uload(currentUser,'mandats',[]),
+    ventes:uload(currentUser,'ventes',[]),
+    sessions:uload(currentUser,'sessions',[]),
+    objectifs:uload(currentUser,'objectifs',[]),
+  };
+  data.totalSec=data.sessions.reduce((s,x)=>s+x.duration,0);
+  data.objectifsAtteints=data.objectifs.filter(o=>o.actuel>=o.cible).length;
+  data.totalComm=data.ventes.filter(v=>Number(v.etape)===3).reduce((s,v)=>s+(v.commission||0),0);
+  // streak: count distinct active days in sessions
+  const activeDays=new Set(data.sessions.map(s=>s.date)).size;
+  data.streak=activeDays;
+  return data;
+}
+
+function renderBadges(){
+  const data=calcXP();
+  const unlocked=BADGES.filter(b=>b.check(data));
+  const locked=BADGES.filter(b=>!b.check(data));
+  const xp=unlocked.length;
+  const level=[...LEVELS].reverse().find(l=>xp>=l.min);
+  const nextLevel=LEVELS.find(l=>l.min>xp);
+  const xpToNext=nextLevel?nextLevel.min-xp:0;
+  const progressInLevel=nextLevel?((xp-level.min)/(nextLevel.min-level.min))*100:100;
+  document.getElementById('level-card').innerHTML=`
+    <div class="level-card" style="background:linear-gradient(135deg,${level.color},#0009)">
+      <div class="level-num">${xp}</div>
+      <div class="level-title">${level.title}</div>
+      <div class="level-xp">${unlocked.length} badge${unlocked.length>1?'s':''} sur ${BADGES.length}</div>
+      ${nextLevel?`<div class="level-bar"><div class="level-bar-fill" style="width:${progressInLevel}%"></div></div><div style="font-size:11px;opacity:.8;margin-top:6px">Plus que ${xpToNext} badge${xpToNext>1?'s':''} pour devenir ${nextLevel.title}</div>`:'<div style="font-size:11px;margin-top:6px">🎉 Niveau maximum atteint !</div>'}
+    </div>`;
+  document.getElementById('badges-grid').innerHTML=unlocked.length?unlocked.map(b=>`<div class="badge-card unlocked"><div class="badge-icon">${b.icon}</div><div class="badge-name">${b.name}</div><div class="badge-desc">${b.desc}</div></div>`).join(''):`<div style="grid-column:span 2;text-align:center;color:var(--muted);font-size:13px;padding:1rem">Aucun badge débloqué pour l'instant</div>`;
+  document.getElementById('badges-locked').innerHTML=locked.length?locked.map(b=>{
+    const prog=b.prog?b.prog(data):0;
+    return`<div class="badge-card locked" style="margin-bottom:.5rem;display:flex;align-items:center;gap:12px;text-align:left;padding:.75rem 1rem">
+      <div style="font-size:24px">${b.icon}</div>
+      <div style="flex:1"><div class="badge-name" style="margin:0">${b.name}</div><div class="badge-desc">${b.desc}</div>${b.prog?`<div style="height:4px;background:var(--gray);border-radius:99px;overflow:hidden;margin-top:6px"><div style="height:100%;background:var(--pink);width:${prog}%"></div></div>`:''}</div>
+      ${b.prog?`<div class="badge-prog">${Math.round(prog)}%</div>`:''}
+    </div>`;
+  }).join(''):`<div style="text-align:center;color:var(--green);font-size:14px;padding:1rem">🎉 Tous les badges débloqués !</div>`;
+}
+
+// ═══ IA DECOOPMAN ═══
+let iaCurrentAction=null;
+const IA_QUICK_ACTIONS=[
+  {id:'annonce',icon:'📝',title:'Annonce immobilière',sub:'Génère une annonce style Decoopman',fields:[
+    {id:'commune',label:'Commune',placeholder:'Bruay-la-Buissière',type:'text'},
+    {id:'type',label:'Type de bien',placeholder:'Maison 1930, Appartement…',type:'text'},
+    {id:'surface',label:'Surface (m²)',placeholder:'105',type:'number'},
+    {id:'chambres',label:'Nombre de chambres',placeholder:'3',type:'number'},
+    {id:'prix',label:'Prix demandé (€)',placeholder:'178000',type:'number'},
+    {id:'atouts',label:'Atouts principaux',placeholder:'Jardin, garage, DPE C, toiture refaite',type:'text'},
+    {id:'etat',label:'État',placeholder:'Rénové / À rafraîchir / À rénover',type:'text'},
+  ]},
+  {id:'mp_estimation',icon:'💬',title:'Réponse MP estimation',sub:'Réponds à un MP "ESTIMATION"',fields:[
+    {id:'prenom',label:'Prénom du prospect',placeholder:'Marie',type:'text'},
+  ]},
+  {id:'relance',icon:'🔁',title:'Message de relance',sub:'Relance un prospect tiède',fields:[
+    {id:'prenom',label:'Prénom du prospect',placeholder:'Jean',type:'text'},
+    {id:'jours',label:'Jours sans nouvelles',placeholder:'7',type:'number'},
+  ]},
+  {id:'porte',icon:'🚪',title:'Script porte-à-porte',sub:'Préparation d\'une session terrain',fields:[
+    {id:'rue',label:'Rue récemment vendue',placeholder:'rue Pasteur',type:'text'},
+    {id:'commune',label:'Commune',placeholder:'Bruay-la-Buissière',type:'text'},
+    {id:'semaines',label:'Délai de vente (semaines)',placeholder:'6',type:'number'},
+  ]},
+  {id:'r1_prep',icon:'🎯',title:'Préparer un R1',sub:'Checklist et questions à poser',fields:[
+    {id:'commune',label:'Commune',placeholder:'Béthune',type:'text'},
+    {id:'type',label:'Type de bien',placeholder:'Maison',type:'text'},
+  ]},
+  {id:'point_vendeur',icon:'📞',title:'Point hebdo vendeur',sub:'Mail de suivi du vendredi',fields:[
+    {id:'prenom',label:'Prénom du vendeur',placeholder:'M. Dupont',type:'text'},
+    {id:'vues',label:'Nombre de vues cette semaine',placeholder:'45',type:'number'},
+    {id:'demandes',label:'Demandes de visite',placeholder:'3',type:'number'},
+    {id:'visites',label:'Visites effectuées',placeholder:'2',type:'number'},
+  ]},
+];
+
+const IA_OBJECTIONS=[
+  {q:'"Votre prix est trop bas"',r:'Je comprends, c\'est jamais agréable d\'entendre un chiffre plus bas que ce qu\'on espère. Mais regardez : ces 4 ventes-là sont les plus comparables à la vôtre [montrer les comparables]. À 165 000 €, vous prenez le risque de bloquer 12 mois sur les portails. À 155 000 €, je m\'engage à vous trouver un acheteur en 2 à 4 mois. Vous préférez vendre vraiment ou rester sur le marché un an ?'},
+  {q:'"5 % de commission, c\'est cher"',r:'5 %, c\'est le marché. Mais surtout, c\'est UNIQUEMENT si je vends. Pas un euro d\'avance. Si je ne vends pas, vous ne payez rien. Vous prenez 0 % de risque financier.\n\nPour info : vendre seul, c\'est en moyenne -10 % sur le prix final et 5 mois de plus. Sur votre maison à 150 000 €, ça représente 15 000 € de moins. Au final, vous gagnez plus AVEC moi que sans. La commission, c\'est juste le coût d\'un pro qui sécurise toute la chaîne.'},
+  {q:'"Je préfère un mandat simple"',r:'Je comprends, c\'est rassurant en apparence. Mais en pratique c\'est l\'inverse :\n\n• Un bien diffusé par 3 agences à 3 prix légèrement différents → ça décrédibilise le bien et fait fuir les acheteurs\n• En exclusif, j\'investis vraiment : photos pro, boosts payants, énergie 100% sur votre bien\n• En simple, aucune agence ne fait ça\n\nJe vous propose un essai : on signe en exclusif pour 3 mois. Si dans 3 mois je n\'ai pas de proposition sérieuse, vous reprenez votre liberté. Vous risquez quoi ?'},
+  {q:'"Je vais essayer seul d\'abord"',r:'C\'est tout à fait votre droit, et certains réussissent. Juste un conseil amical : tenez 2 mois maximum.\n\nAu-delà, votre bien commence à "vieillir" sur les portails — Le Bon Coin garde l\'historique, et les acheteurs négocient plus dur quand ils voient qu\'un bien traîne.\n\nSi à 2 mois vous voulez basculer chez un pro, je suis là. Mais on aura perdu 2 mois et probablement quelques milliers d\'euros sur le prix final. À vous de voir ce qui vous convient le mieux.'},
+  {q:'"On a déjà une autre agence qu\'on connaît"',r:'Très bien. Je respecte la fidélité, c\'est une qualité.\n\nUne seule chose avant de signer définitivement : comparez. Demandez à votre agence les 4 dernières ventes qu\'ils ont faites dans VOTRE quartier — pas dans la commune, dans VOTRE rue ou rues voisines.\n\nSi on est meilleurs sur ce critère, vous saurez. Sinon, allez-y, signez avec eux. C\'est juste un comparatif honnête entre deux pros du secteur.'},
+  {q:'"Je veux y réfléchir"',r:'Bien sûr, c\'est normal. Juste une question pour qu\'on soit efficaces : sur quoi avez-vous besoin de réfléchir ?\n\n• Le prix ?\n• La commission ?\n• Le timing ?\n• La forme du mandat ?\n\nComme ça, je peux apporter les bonnes réponses, et vous repartez avec exactement ce qu\'il vous faut pour décider en connaissance de cause.'},
+  {q:'"Mon voisin est intéressé, pas besoin d\'agence"',r:'Si c\'est sérieux, allez-y, ne payez pas de commission ! Vraiment.\n\nMais si ce n\'est qu\'une vague idée, ne bloquez pas votre projet 6 mois en attendant qu\'il se décide. On peut signer un mandat avec une CLAUSE qui exclut cette personne nommément.\n\n• Si elle achète directement → vous ne me devez rien\n• Si elle se rétracte ou disparaît → je suis là pour vendre\n\nVous gagnez sur les deux tableaux. Ça vous va ?'},
+];
+
+function renderIA(){
+  document.getElementById('ia-quick').innerHTML=IA_QUICK_ACTIONS.map(a=>`
+    <div class="ia-quick-card" onclick="openIAGenerate('${a.id}')">
+      <div class="quick-card-icon">${a.icon}</div>
+      <div class="quick-card-title">${a.title}</div>
+      <div class="quick-card-sub">${a.sub}</div>
+    </div>`).join('');
+  document.getElementById('ia-objections').innerHTML=IA_OBJECTIONS.map((o,i)=>`
+    <div class="objection-card" onclick="showObjection(${i})">
+      <span class="objection-arrow">›</span>
+      <div class="objection-q">${o.q}</div>
+      <div style="font-size:12px;color:var(--muted)">Tape pour voir la réponse type</div>
+    </div>`).join('');
+}
+
+function showObjection(i){
+  const o=IA_OBJECTIONS[i];
+  document.getElementById('ia-result-title').textContent=o.q;
+  document.getElementById('ia-result-content').textContent=o.r;
+  document.getElementById('modal-ia-result').classList.add('open');
+}
+
+function openIAGenerate(actionId){
+  const action=IA_QUICK_ACTIONS.find(a=>a.id===actionId);
+  if(!action) return;
+  iaCurrentAction=actionId;
+  document.getElementById('ia-input-title').textContent=action.icon+' '+action.title;
+  document.getElementById('ia-input-fields').innerHTML=action.fields.map(f=>`
+    <div class="field"><label>${f.label}</label><input id="ia-${f.id}" type="${f.type}" placeholder="${f.placeholder}"></div>
+  `).join('');
+  document.getElementById('modal-ia-input').classList.add('open');
+}
+
+function generateIA(){
+  const action=IA_QUICK_ACTIONS.find(a=>a.id===iaCurrentAction);
+  if(!action) return;
+  const data={};
+  action.fields.forEach(f=>{data[f.id]=document.getElementById('ia-'+f.id).value.trim()});
+  let result='';
+  if(iaCurrentAction==='annonce'){
+    const pts=data.atouts?data.atouts.split(',').map(p=>'✓ '+p.trim()).join('\n'):'';
+    const accroches={
+      'Rénové':`On l'a rarement vu : ${data.type.toLowerCase()} entièrement rénové${data.type.toLowerCase().includes('maison')?'e':''} avec goût, dans un quartier calme et recherché de ${data.commune}. Le coup de cœur, dès le premier regard.`,
+      'À rafraîchir':`On vous dit ce qui est : ce ${data.type.toLowerCase()} de ${data.commune} a du potentiel, mais a besoin d'un coup de jeune. À ce prix-là, c'est l'occasion idéale pour un primo-accédant qui veut faire des travaux à son goût.`,
+      'À rénover':`Pour ceux qui aiment les projets : ce ${data.type.toLowerCase()} à ${data.commune} est à rénover entièrement. Bien situé, à un prix attractif. Idéal investisseur ou bricoleur passionné.`,
+    };
+    const accroche=accroches[data.etat]||`À découvrir à ${data.commune} : ${data.type.toLowerCase()} de ${data.surface} m², ${data.chambres} chambres. Un bien qui mérite votre visite.`;
+    const prixNum=Number(data.prix)||0;
+    result=`TITRE : ${data.commune} — ${data.type}, ${data.surface} m²${data.atouts?', '+data.atouts.split(',')[0].trim():''}\n\n${accroche}\n\n[Décrivez ici la visite virtuelle : entrée, salon, cuisine, chambres, salle de bain, extérieur — ${data.surface} m² habitables, ${data.chambres} chambres]\n\nLes points forts :\n${pts}\n\nPrix : ${prixNum.toLocaleString('fr-FR')} € HAI (5 % HT charge acquéreur)\n\nMorgan Decoopman — 06 25 47 56 07\nDecoopman Immobilier — entreprise familiale\n4,8/5 sur Google (100+ avis) ★`;
+  }
+  else if(iaCurrentAction==='mp_estimation'){
+    result=`Bonjour ${data.prenom||'[Prénom]'}, merci pour votre message 🙏\n\nJe suis ${currentUserName} de Decoopman Immobilier, on travaille sur Bruay, Divion, Houdain et Haillicourt.\n\nPour vous donner une vraie fourchette de prix, j'aurais besoin de quelques infos rapides :\n\n1️⃣ Adresse précise (ou au moins la rue) ?\n2️⃣ Surface habitable approximative ?\n3️⃣ Combien de chambres ?\n4️⃣ Avec ou sans jardin / garage ?\n5️⃣ État général : bon état / à rafraîchir / à rénover ?\n\nVous projetez de vendre dans combien de temps environ ? Pas de pression, c'est juste pour adapter ma réponse.\n\nJe vous envoie une 1ère estimation par MP, et si elle vous parle, je peux passer chez vous pour faire le tour, c'est gratuit et sans engagement.\n\nBelle journée,\n${currentUserName}`;
+  }
+  else if(iaCurrentAction==='relance'){
+    result=`Bonjour ${data.prenom||'[Prénom]'},\n\nJe vous envoie ce petit mot, juste pour savoir où vous en êtes par rapport à votre projet de vente.\n\nAucune pression de mon côté — je sais que ce genre de décision se prend rarement en quelques jours. Si vous avez besoin de plus d'infos pour avancer (idée du marché, conseils sur le prix, démarches), je suis dispo en MP ou au téléphone.\n\nSi finalement le projet n'est plus d'actualité, dites-le-moi simplement, je n'insiste pas.\n\nBelle journée 🙏\n${currentUserName}`;
+  }
+  else if(iaCurrentAction==='porte'){
+    result=`📋 PRÉPARATION PORTE-À-PORTE\n\nQuartier : ${data.rue||'[rue]'}, ${data.commune||'[commune]'}\nObjectif : 30 portes sur 200-300m autour de la vente\n\nMatériel à prendre :\n✓ Cartes de visite (50)\n✓ Flyers "VENDU" personnalisés\n✓ Mètre laser (au cas où)\n✓ Chaussures confortables\n\nTiming idéal :\n• Mardi-Samedi 17h-19h\n• Samedi 10h-12h\n• Éviter : lundi, midi, dimanche\n\n📢 SCRIPT À UTILISER :\n\n"Bonjour Madame / Monsieur, je suis ${currentUserName} de Decoopman Immobilier. Je passe simplement vous prévenir qu'on vient de vendre la maison de la ${data.rue||'rue X'}, à 2 minutes de chez vous, en seulement ${data.semaines||'[X]'} semaines. Je voulais vous le faire savoir parce que ça fait monter la cote de votre quartier."\n\n"Si vous-même ou un proche pensez à vendre dans les mois qui viennent, on connaît très bien le secteur, l'estimation est offerte. Voici ma carte, je vous laisse réfléchir. Bonne journée !"\n\n💡 RAPPEL :\nTu ne forces pas. Tu sèmes. Sur 30 portes : 1 à 3 personnes en projet de vente sur 12 mois. C'est suffisant pour rentrer un mandat tous les 2-3 sessions.`;
+  }
+  else if(iaCurrentAction==='r1_prep'){
+    result=`🎯 CHECKLIST R1 ESTIMATION\n${data.commune||'[Commune]'} — ${data.type||'[Type]'}\n\n📋 LA VEILLE :\n✓ Sortir 4 ventes comparables (DVF, archives Le Bon Coin)\n✓ Calculer une fourchette de prix argumentée\n✓ Préparer plaquette imprimée (logo + 4,8/5 Google)\n✓ Imprimer 3 mandats vierges (exclusif, semi, simple)\n✓ Relire le quartier (écoles, transports, projets)\n\n⏱️ DÉROULÉ (1h30 à 2h) :\n• 5-10 min : Arrivée (refuser le café au début)\n• 25-30 min : Visite pièce par pièce\n• 30-40 min : Conversation (poser les questions, écouter)\n• 15-20 min : Présentation du dossier\n• 10-15 min : Closing\n\n❓ QUESTIONS À POSER (dans cet ordre) :\n1. Pourquoi vendez-vous ?\n2. Quel est votre délai idéal ?\n3. Avez-vous déjà fait estimer ? Par qui ?\n4. Avez-vous une idée du prix ?\n5. Que feriez-vous avec le produit de la vente ?\n6. Si on commençait demain, ça vous irait ?\n\n🎯 CLOSING :\n"Si on est d'accord sur le prix, je vous propose qu'on signe ensemble aujourd'hui. Comme ça, dès demain, je lance les photos pro et la diffusion. Mandat exclusif 3 mois, pas de frais d'avance, commission 5% uniquement si je vends."\n\n💡 RÈGLE : un R1 de 1h30-2h c'est BON SIGNE. Le mandat se signe sur la confiance, et la confiance se construit dans la conversation, pas en survolant.`;
+  }
+  else if(iaCurrentAction==='point_vendeur'){
+    const vues=data.vues||0,demandes=data.demandes||0,visites=data.visites||0;
+    result=`Bonjour ${data.prenom||'[Prénom]'},\n\nComme convenu, je vous fais un point sur votre bien cette semaine :\n\n📊 LES CHIFFRES DE LA SEMAINE :\n• ${vues} vues sur les portails (Bien'ici, Le Bon Coin, Logic-Immo)\n• ${demandes} demande${demandes>1?'s':''} de visite reçue${demandes>1?'s':''}\n• ${visites} visite${visites>1?'s':''} effectuée${visites>1?'s':''}\n\n${visites>0?'📝 RETOURS DES ACHETEURS :\n[Détailler ici les retours qualitatifs des visiteurs : ce qui leur a plu, ce qui a freiné]\n\n':''}🎯 ACTIONS PRÉVUES LA SEMAINE PROCHAINE :\n• Boost de l'annonce sur Bien'ici (budget 10€)\n• Relance des prospects qui ont enregistré l'annonce\n• [Autres actions ciblées selon les retours]\n\nN'hésitez pas si vous avez la moindre question, je reste joignable au 06 [numéro].\n\nBon week-end,\n${currentUserName}\nDecoopman Immobilier`;
+  }
+  document.getElementById('ia-result-title').textContent='✨ '+IA_QUICK_ACTIONS.find(a=>a.id===iaCurrentAction).title;
+  document.getElementById('ia-result-content').textContent=result;
+  closeModal('modal-ia-input');
+  document.getElementById('modal-ia-result').classList.add('open');
+}
+
+function copyIAResult(){
+  const text=document.getElementById('ia-result-content').textContent;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(text).then(()=>{alert('✅ Copié dans le presse-papier !')});
+  } else {
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');alert('✅ Copié !')}catch(e){alert('Copie manuelle nécessaire')}
+    document.body.removeChild(ta);
+  }
+}
+
+// ═══ ADMIN ═══
+function renderAdmin(){
+  if(!isAdmin) return;
+  const users=getUsers();
+  const userKeys=Object.keys(users);
+  const total=userKeys.length;
+  document.getElementById('admin-stats').innerHTML=[
+    {l:'Total comptes',v:total,c:'var(--blue)'},
+    {l:'Collaborateurs',v:userKeys.filter(k=>!ADMINS.includes(k)).length,c:'var(--pink)'},
+    {l:'Admins',v:userKeys.filter(k=>ADMINS.includes(k)).length,c:'var(--orange)'},
+    {l:'Comptes actifs',v:total,c:'var(--green)'},
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.l}</div><div class="stat-val" style="color:${s.c}">${s.v}</div></div>`).join('');
+  if(!userKeys.length){document.getElementById('admin-users-list').innerHTML=`<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">Aucun compte créé</div></div>`;return}
+  document.getElementById('admin-users-list').innerHTML=userKeys.map(k=>{
+    const u=users[k];
+    const isAdminUser=ADMINS.includes(k);
+    const mandats=uload(k,'mandats',[]).length;
+    const contacts=uload(k,'contacts',[]).length;
+    const ventes=uload(k,'ventes',[]).length;
+    const sessions=uload(k,'sessions',[]);
+    const totalTemps=sessions.reduce((a,s)=>a+s.duration,0);
+    return`<div class="item-card" style="${isAdminUser?'border-color:var(--pink);':''} margin-bottom:.75rem">
+      <div class="card-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:40px;height:40px;border-radius:50%;background:${isAdminUser?'var(--pink)':'var(--blue)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0">${u.prenom.charAt(0).toUpperCase()}</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:var(--text)">${u.prenom}${isAdminUser?' <span style="font-size:11px;color:var(--pink);font-weight:600">ADMIN</span>':''}</div>
+            <div style="font-size:12px;color:var(--muted)">@${k}</div>
+          </div>
+        </div>
+        ${!isAdminUser?`<button class="act-btn danger" onclick="deleteUser('${k}','${u.prenom}')">Supprimer</button>`:`<span style="font-size:11px;color:var(--muted)">Protégé</span>`}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:.75rem">
+        <div style="text-align:center;background:var(--gray);border-radius:10px;padding:.5rem"><div style="font-size:16px;font-weight:700;color:var(--blue)">${mandats}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase">Mandats</div></div>
+        <div style="text-align:center;background:var(--gray);border-radius:10px;padding:.5rem"><div style="font-size:16px;font-weight:700;color:var(--blue)">${contacts}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase">Prospects</div></div>
+        <div style="text-align:center;background:var(--gray);border-radius:10px;padding:.5rem"><div style="font-size:16px;font-weight:700;color:var(--green)">${ventes}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase">Ventes</div></div>
+        <div style="text-align:center;background:var(--gray);border-radius:10px;padding:.5rem"><div style="font-size:16px;font-weight:700;color:var(--pink)">${fmtTimer(totalTemps)}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase">Temps</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteUser(userKey,prenom){
+  if(!confirm(`Supprimer le compte de ${prenom} ?\n\nToutes ses données seront définitivement supprimées.`)) return;
+  ['mandats','contacts','ventes','sessions','objectifs','todos'].forEach(k=>localStorage.removeItem(ukey(userKey,k)));
+  const users=getUsers();
+  delete users[userKey];
+  saveUsers(users);
+  if(adminViewAs===userKey) adminViewAs=null;
+  renderAdmin();
+  buildTabs();
+}
+
+</script>
+</body>
+</html>
