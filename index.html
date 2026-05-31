@@ -2767,5 +2767,252 @@ function deleteUser(userKey,prenom){
 }
 
 </script>
+<!-- MISE À JOUR DECOOPMAN v2 — coller juste avant </body> -->
+<script>
+(function(){
+  function start(){
+    if(typeof getContacts!=='function'||typeof getMandats!=='function'){return setTimeout(start,60);}
+    injectLinkFields();
+  }
+  window.refreshAll=function(){
+    [renderToday,renderProspection,renderMandats,renderVentes,renderKanban,renderCommissions,renderBadges].forEach(function(fn){
+      try{ if(typeof fn==='function') fn(); }catch(e){}
+    });
+  };
+  window.mandatById=function(id){ try{return getMandats().find(function(m){return m.id===id});}catch(e){return null} };
+  window.contactById=function(id){ try{return getContacts().find(function(c){return c.id===id});}catch(e){return null} };
+  window.syncContactToMandat=function(contactId,newMandatId){
+    var mandats=getMandats().map(function(m){
+      if(m.id===newMandatId) return Object.assign({},m,{contactId:contactId});
+      if(m.contactId===contactId && m.id!==newMandatId) return Object.assign({},m,{contactId:null});
+      return m;
+    });
+    saveMandats(mandats);
+  };
+  window.syncMandatToContact=function(mandatId,newContactId){
+    var contacts=getContacts().map(function(c){
+      if(c.id===newContactId) return Object.assign({},c,{mandatId:mandatId});
+      if(c.mandatId===mandatId && c.id!==newContactId) return Object.assign({},c,{mandatId:null});
+      return c;
+    });
+    saveContacts(contacts);
+  };
+  window.jumpLink=function(ev,tab){ if(ev){ev.stopPropagation();} if(typeof goTo==='function') goTo(tab); };
+  function injectLinkFields(){
+    var addr=document.getElementById('mp-addr');
+    if(addr && !document.getElementById('mp-mandat')){
+      var f=document.createElement('div'); f.className='field';
+      f.innerHTML='<label>Bien associé</label><select id="mp-mandat"><option value="">— Aucun bien associé —</option></select>';
+      var holder=addr.closest('.field'); holder.parentNode.insertBefore(f,holder.nextSibling);
+    }
+    var etape=document.getElementById('mm-etape');
+    if(etape && !document.getElementById('mm-contact')){
+      var f2=document.createElement('div'); f2.className='field';
+      f2.innerHTML='<label>Contact / propriétaire associé</label><select id="mm-contact"><option value="">— Aucun contact associé —</option></select>';
+      var holder2=etape.closest('.field'); holder2.parentNode.insertBefore(f2,holder2.nextSibling);
+    }
+  }
+  function fillMandatSelect(selectedId){
+    var sel=document.getElementById('mp-mandat'); if(!sel) return;
+    var opts='<option value="">— Aucun bien associé —</option>';
+    getMandats().forEach(function(m){ opts+='<option value="'+m.id+'">'+esc(m.adresse)+' ('+m.etape+')</option>'; });
+    sel.innerHTML=opts; sel.value=selectedId||'';
+  }
+  function fillContactSelect(selectedId){
+    var sel=document.getElementById('mm-contact'); if(!sel) return;
+    var opts='<option value="">— Aucun contact associé —</option>';
+    getContacts().forEach(function(c){ opts+='<option value="'+c.id+'">'+esc(c.nom)+'</option>'; });
+    sel.innerHTML=opts; sel.value=selectedId||'';
+  }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  window.openContactModal=function(c){
+    c=c||null;
+    pEditId=c?c.id:null;
+    document.getElementById('mp-title').textContent=c?'Modifier':'Nouveau contact';
+    document.getElementById('mp-nom').value=c&&c.nom||'';
+    document.getElementById('mp-tel').value=c&&c.tel||'';
+    document.getElementById('mp-email').value=c&&c.email||'';
+    document.getElementById('mp-addr').value=c&&c.addr||'';
+    document.getElementById('mp-type').value=c&&c.type||'Propriétaire';
+    document.getElementById('mp-stat').value=c&&c.stat||'À appeler';
+    document.getElementById('mp-cont').value=c&&c.cont||'';
+    document.getElementById('mp-rapp').value=c&&c.rapp||'';
+    document.getElementById('mp-result').value=c&&c.result||'';
+    document.getElementById('mp-notes').value=c&&c.notes||'';
+    fillMandatSelect(c&&c.mandatId);
+    document.getElementById('modal-prospection').classList.add('open');
+  };
+  window.saveContact=function(){
+    var nom=document.getElementById('mp-nom').value.trim();
+    if(!nom)return alert('Le nom est obligatoire.');
+    var sel=document.getElementById('mp-mandat'); var mandatId=sel?sel.value:'';
+    var entry={id:pEditId||Date.now().toString(),nom:nom,
+      tel:document.getElementById('mp-tel').value.trim(),
+      email:document.getElementById('mp-email').value.trim(),
+      addr:document.getElementById('mp-addr').value.trim(),
+      type:document.getElementById('mp-type').value,
+      stat:document.getElementById('mp-stat').value,
+      cont:document.getElementById('mp-cont').value,
+      rapp:document.getElementById('mp-rapp').value,
+      result:document.getElementById('mp-result').value,
+      notes:document.getElementById('mp-notes').value.trim(),
+      mandatId:mandatId||null};
+    var data=getContacts();
+    if(pEditId)saveContacts(data.map(function(c){return c.id===pEditId?entry:c}));else saveContacts(data.concat([entry]));
+    syncContactToMandat(entry.id,mandatId||null);
+    closeModal('modal-prospection');
+    refreshAll();
+  };
+  window.openMandatModal=function(b){
+    b=b||null;
+    mEditId=b?b.id:null;
+    document.getElementById('mm-title').textContent=b?'Modifier le mandat':'Nouveau mandat';
+    document.getElementById('mm-adresse').value=b&&b.adresse||'';
+    document.getElementById('mm-type').value=b&&b.type||'Appartement';
+    document.getElementById('mm-mandat').value=b&&b.mandat||'exclusif';
+    document.getElementById('mm-etape').value=b&&b.etape||'Mandat';
+    document.getElementById('mm-prix').value=b&&b.prix||'';
+    document.getElementById('mm-offre').value=b&&b.offre||'';
+    if(b){setCommType(b.commType||'pct');document.getElementById('mm-commission-pct').value=b.commissionPct||'';document.getElementById('mm-commission-fix').value=b.commissionFix||'';}
+    else{setCommType('pct');}
+    document.getElementById('mm-visites').value=b&&b.visites||0;
+    document.getElementById('mm-dentree').value=b&&b.dentree||'';
+    document.getElementById('mm-dexpir').value=b&&b.dexpir||'';
+    fillContactSelect(b&&b.contactId);
+    document.getElementById('modal-mandat').classList.add('open');
+  };
+  window.saveMandat=function(){
+    var adresse=document.getElementById('mm-adresse').value.trim();
+    if(!adresse)return alert("L'adresse est obligatoire.");
+    var sel=document.getElementById('mm-contact'); var contactId=sel?sel.value:'';
+    var entry={id:mEditId||Date.now().toString(),adresse:adresse,
+      type:document.getElementById('mm-type').value,
+      mandat:document.getElementById('mm-mandat').value,
+      etape:document.getElementById('mm-etape').value,
+      prix:Number(document.getElementById('mm-prix').value)||0,
+      offre:document.getElementById('mm-offre').value?Number(document.getElementById('mm-offre').value):null,
+      commType:commType,
+      commissionPct:Number(document.getElementById('mm-commission-pct').value)||0,
+      commissionFix:Number(document.getElementById('mm-commission-fix').value)||0,
+      visites:Number(document.getElementById('mm-visites').value)||0,
+      dentree:document.getElementById('mm-dentree').value,
+      dexpir:document.getElementById('mm-dexpir').value,
+      contactId:contactId||null};
+    var data=getMandats();
+    if(mEditId)saveMandats(data.map(function(b){return b.id===mEditId?entry:b}));else saveMandats(data.concat([entry]));
+    syncMandatToContact(entry.id,contactId||null);
+    closeModal('modal-mandat');
+    refreshAll();
+  };
+  window.applyStageChange=function(newStage){
+    if(!stageChangeContext) return;
+    var type=stageChangeContext.type, id=stageChangeContext.id;
+    if(type==='prospect'){
+      saveContacts(getContacts().map(function(c){return c.id===id?Object.assign({},c,{stat:newStage}):c}));
+    } else {
+      saveMandats(getMandats().map(function(m){return m.id===id?Object.assign({},m,{etape:newStage}):m}));
+    }
+    closeModal('modal-stage');
+    refreshAll();
+  };
+  window.renderProspection=function(){
+    var data=getContacts();
+    var q=(document.getElementById('p-search')&&document.getElementById('p-search').value||'').toLowerCase();
+    var urg=data.filter(function(c){var n=daysFrom(c.rapp);return n!==null&&n>=0&&n<=3}).length;
+    document.getElementById('p-stats').innerHTML=[
+      {l:'Total contacts',v:data.length,c:'var(--blue)'},{l:'Rappels urgents',v:urg,c:urg>0?'var(--red)':'var(--blue)'},
+      {l:'Intéressés',v:data.filter(function(c){return c.stat==='Intéressé'}).length,c:'var(--blue)'},{l:'Gagnés',v:data.filter(function(c){return c.stat==='Gagné'}).length,c:'var(--pink)'},
+    ].map(function(s){return '<div class="stat-card"><div class="stat-label">'+s.l+'</div><div class="stat-val" style="color:'+s.c+'">'+s.v+'</div></div>'}).join('');
+    var statuts=['Tous','À appeler','En cours','Intéressé','Pas prêt','Refus','Gagné','Perdu'];
+    document.getElementById('p-filters').innerHTML=statuts.map(function(s){return '<button class="filter-chip'+(pFilter===s?' active':'')+'" onclick="setPFilter(\''+s+'\')">'+s+'</button>'}).join('');
+    var rows=data;
+    if(pFilter!=='Tous')rows=rows.filter(function(c){return c.stat===pFilter});
+    if(q)rows=rows.filter(function(c){return (''+c.nom+c.addr+c.notes).toLowerCase().indexOf(q)>=0});
+    var el=document.getElementById('p-cards');
+    if(!rows.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Aucun contact<br><span style="font-size:13px">Appuie sur + pour en ajouter</span></div></div>';return}
+    el.innerHTML=rows.map(function(c){
+      var tc=TC[c.type]||{bg:'#f1f5f9',tx:'#64748b'};
+      var sc=SC[c.stat]||{bg:'#f1f5f9',tx:'#64748b'};
+      var r=rappelLbl(c.rapp);
+      var lien=(c.mandatId&&mandatById(c.mandatId))?'<div class="link-chip pink" onclick="jumpLink(event,\'mandats\')">🏠 '+esc(mandatById(c.mandatId).adresse)+'</div>':'';
+      return '<div class="item-card">'+
+        '<div class="card-header"><span class="badge" style="background:'+tc.bg+';color:'+tc.tx+'">'+c.type+'</span><span class="badge" style="background:'+sc.bg+';color:'+sc.tx+'">'+c.stat+'</span></div>'+
+        '<div class="card-title">'+esc(c.nom)+'</div><div class="card-sub">'+(c.tel||'')+((c.tel&&c.addr)?' · ':'')+(c.addr||'')+'</div>'+
+        lien+
+        '<div class="card-row">'+
+          '<div><div class="card-field-label">1er contact</div><div class="card-field-val" style="font-size:13px">'+fmtd(c.cont)+'</div></div>'+
+          '<div><div class="card-field-label">Rappel</div><div class="card-field-val '+r.cls+'" style="font-size:13px">'+r.lbl+'</div></div>'+
+        '</div>'+
+        (c.result?'<div style="font-size:12px;color:var(--blue);font-weight:600;margin-bottom:4px">'+esc(c.result)+'</div>':'')+
+        (c.notes?'<div style="font-size:12px;color:var(--muted);margin-bottom:8px">'+esc(c.notes)+'</div>':'')+
+        '<div class="card-footer"><span></span><div class="card-actions"><button class="act-btn" onclick="editContact(\''+c.id+'\')">Modifier</button><button class="act-btn danger" onclick="delContact(\''+c.id+'\')">Suppr.</button></div></div>'+
+      '</div>';
+    }).join('');
+  };
+  window.renderMandats=function(){
+    var data=getMandats();
+    var totalComm=data.reduce(function(s,b){return s+calcComm(b)},0);
+    document.getElementById('m-stats').innerHTML=[
+      {l:'Total mandats',v:data.length,c:'var(--blue)'},{l:'Commissions',v:fmt(totalComm),c:'var(--pink)'},
+      {l:'En cours',v:data.filter(function(b){return b.etape!=='Vendu'}).length,c:'var(--blue)'},{l:'Ventes signées',v:data.filter(function(b){return b.etape==='Vendu'}).length,c:'var(--green)'},
+    ].map(function(s){return '<div class="stat-card"><div class="stat-label">'+s.l+'</div><div class="stat-val" style="color:'+s.c+'">'+s.v+'</div></div>'}).join('');
+    document.getElementById('m-pipeline').innerHTML=ETAPES.map(function(e){var c=ECOLS[e],count=data.filter(function(b){return b.etape===e}).length;return '<div class="pipe-item" style="border-top-color:'+c.dot+'"><div class="pipe-count" style="color:'+c.dot+'">'+count+'</div><div class="pipe-label">'+e+'</div></div>'}).join('');
+    document.getElementById('m-filters').innerHTML=['Tous'].concat(ETAPES).map(function(e){return '<button class="filter-chip'+(mFilter===e?' active':'')+'" onclick="setMFilter(\''+e+'\')">'+e+(e!=='Tous'?' ('+data.filter(function(b){return b.etape===e}).length+')':'')+'</button>'}).join('');
+    var rows=mFilter==='Tous'?data:data.filter(function(b){return b.etape===mFilter});
+    var el=document.getElementById('m-cards');
+    if(!rows.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🏠</div><div class="empty-text">Aucun mandat'+(mFilter!=='Tous'?' dans cette étape':'')+'<br><span style="font-size:13px">Appuie sur + pour en ajouter</span></div></div>';return}
+    el.innerHTML=rows.map(function(b){
+      var c=ECOLS[b.etape],j=daysFrom(b.dexpir);
+      var jcol=j===null?'var(--muted)':j<0?'var(--red)':j<=30?'var(--orange)':'var(--muted)';
+      var jlbl=j===null?'—':j<0?'Expiré ⚠':j===0?'Auj. ⚠':j===1?'Demain':(j+'j'+(j<=30?' ⚠':''));
+      var commAff=b.commType==='fix'?fmt(b.commissionFix):(b.commissionPct+'% → '+fmt(calcComm(b)));
+      var lien=(b.contactId&&contactById(b.contactId))?'<div class="link-chip" onclick="jumpLink(event,\'prospection\')">👤 '+esc(contactById(b.contactId).nom)+'</div>':'';
+      return '<div class="item-card">'+
+        '<div class="card-header"><span class="badge" style="background:'+c.bg+';color:'+c.tx+'"><span class="badge-dot" style="background:'+c.dot+'"></span>'+b.etape+'</span><span style="font-size:11px;color:'+(b.mandat==='exclusif'?'var(--pink)':'var(--muted)')+';font-weight:600">Mandat '+b.mandat+'</span></div>'+
+        '<div class="card-title">'+esc(b.adresse)+'</div><div class="card-sub">'+b.type+'</div>'+
+        lien+
+        '<div class="card-row">'+
+          '<div><div class="card-field-label">Prix demandé</div><div class="card-field-val">'+fmt(b.prix)+'</div></div>'+
+          '<div><div class="card-field-label">Offre reçue</div><div class="card-field-val" style="color:'+(b.offre?'var(--green)':'var(--muted)')+'">'+fmt(b.offre)+'</div></div>'+
+          '<div><div class="card-field-label">Commission</div><div class="card-field-val" style="color:var(--pink);font-size:12px">'+commAff+'</div></div>'+
+          '<div><div class="card-field-label">Expiration</div><div class="card-field-val" style="color:'+jcol+';font-size:13px">'+jlbl+'</div></div>'+
+        '</div>'+
+        '<div class="card-footer"><span>'+(b.visites||0)+' visite'+(b.visites>1?'s':'')+' · '+fmtd(b.dentree)+'</span>'+
+          '<div class="card-actions"><button class="act-btn" onclick="editMandat(\''+b.id+'\')">Modifier</button><button class="act-btn danger" onclick="delMandat(\''+b.id+'\')">Suppr.</button></div>'+
+        '</div></div>';
+    }).join('');
+  };
+  window.renderKanban=function(){
+    var board=document.getElementById('kanban-board');
+    if(kanbanType==='prospects'){
+      var data=getContacts();
+      board.innerHTML=PROSPECT_STAGES.map(function(stage){
+        var items=data.filter(function(c){return c.stat===stage});
+        var headerColor=PROSPECT_STAGE_TXT[stage];
+        return '<div class="kanban-col"><div class="kanban-col-header" style="color:'+headerColor+'"><span>'+stage+'</span><span class="kanban-col-count">'+items.length+'</span></div><div class="kanban-cards">'+
+          (items.length?items.map(function(c){
+            var lien=(c.mandatId&&mandatById(c.mandatId))?'<div style="font-size:10px;color:var(--blue2);margin-top:4px">🏠 '+esc(mandatById(c.mandatId).adresse)+'</div>':'';
+            return '<div class="kanban-card" onclick="changeStage(\'prospect\',\''+c.id+'\')"><div class="kanban-card-title">'+esc(c.nom)+'</div><div class="kanban-card-sub">'+(c.tel||c.addr||'')+'</div><div class="kanban-card-meta"><span class="kanban-card-tag" style="background:'+PROSPECT_STAGE_COLORS[stage]+';color:'+PROSPECT_STAGE_TXT[stage]+'">'+c.type+'</span>'+(c.rapp?'<span style="font-size:10px;color:var(--muted)">📅 '+fmtd(c.rapp)+'</span>':'')+'</div>'+lien+'</div>';
+          }).join(''):'<div class="kanban-empty">Aucun</div>')+
+        '</div></div>';
+      }).join('');
+    } else {
+      var data2=getMandats();
+      board.innerHTML=ETAPES.map(function(stage){
+        var items=data2.filter(function(b){return b.etape===stage});
+        var c=ECOLS[stage];
+        return '<div class="kanban-col"><div class="kanban-col-header" style="color:'+c.tx+'"><span>'+stage+'</span><span class="kanban-col-count">'+items.length+'</span></div><div class="kanban-cards">'+
+          (items.length?items.map(function(m){
+            var lien=(m.contactId&&contactById(m.contactId))?'<div style="font-size:10px;color:#9c0f60;margin-top:4px">👤 '+esc(contactById(m.contactId).nom)+'</div>':'';
+            return '<div class="kanban-card" onclick="changeStage(\'mandat\',\''+m.id+'\')"><div class="kanban-card-title">'+esc(m.adresse)+'</div><div class="kanban-card-sub">'+m.type+' · '+fmt(m.prix)+'</div><div class="kanban-card-meta"><span class="kanban-card-tag" style="background:'+c.bg+';color:'+c.tx+'">'+m.mandat+'</span><span style="font-size:10px;color:var(--pink);font-weight:600">'+fmt(calcComm(m))+'</span></div>'+lien+'</div>';
+          }).join(''):'<div class="kanban-empty">Aucun</div>')+
+        '</div></div>';
+      }).join('');
+    }
+  };
+  start();
+})();
+</script>
 </body>
 </html>
