@@ -3014,5 +3014,486 @@ function deleteUser(userKey,prenom){
   start();
 })();
 </script>
+  <!-- ═══════════════════════════════════════════════════════════════
+     MISE À JOUR DECOOPMAN v3 — à coller juste avant </body>
+     ═══════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  function ready(fn){ if(typeof getMandats==='function'&&typeof uload==='function'&&typeof viewUser==='function') fn(); else setTimeout(function(){ready(fn)},60); }
+
+  window.biensView='mandats';
+  window.venteFilter='all';
+  window._fichePhotos=[];
+
+  function init(){
+    injectLinkFields();
+    injectEstimModal();
+    injectFicheIntoMandat();
+    injectBiensUI();
+    injectVentesToggle();
+    injectVentesFilter();
+    relabelBiens();
+    observeRelabel();
+    try{ renderEstimations(); }catch(e){}
+  }
+
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function val(id){ var el=document.getElementById(id); return el?el.value:''; }
+  function setVal(id,v){ var el=document.getElementById(id); if(el) el.value=(v==null?'':v); }
+  function opt(list,sel){ return list.map(function(o){return '<option'+(o===sel?' selected':'')+'>'+o+'</option>'}).join(''); }
+  function safeStore(fn){ try{ fn(); return true; }catch(e){ alert('⚠️ Stockage plein (souvent à cause des photos). Supprime quelques photos ou biens, puis réessaie.'); return false; } }
+
+  window.refreshAll=function(){
+    [renderToday,renderProspection,renderMandats,renderVentes,renderKanban,renderCommissions,renderBadges,renderEstimations].forEach(function(fn){
+      try{ if(typeof fn==='function') fn(); }catch(e){}
+    });
+  };
+  window.mandatById=function(id){ try{return getMandats().find(function(m){return m.id===id});}catch(e){return null} };
+  window.contactById=function(id){ try{return getContacts().find(function(c){return c.id===id});}catch(e){return null} };
+  window.jumpLink=function(ev,tab){ if(ev){ev.stopPropagation();} if(typeof goTo==='function') goTo(tab); };
+
+  window.syncContactToMandat=function(contactId,newMandatId){
+    saveMandats(getMandats().map(function(m){
+      if(m.id===newMandatId) return Object.assign({},m,{contactId:contactId});
+      if(m.contactId===contactId && m.id!==newMandatId) return Object.assign({},m,{contactId:null});
+      return m;
+    }));
+  };
+  window.syncMandatToContact=function(mandatId,newContactId){
+    saveContacts(getContacts().map(function(c){
+      if(c.id===newContactId) return Object.assign({},c,{mandatId:mandatId});
+      if(c.mandatId===mandatId && c.id!==newContactId) return Object.assign({},c,{mandatId:null});
+      return c;
+    }));
+  };
+
+  window.compressImage=function(file,cb){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){
+        var max=1000,w=img.width,h=img.height;
+        if(w>h&&w>max){h=Math.round(h*max/w);w=max;}
+        else if(h>=w&&h>max){w=Math.round(w*max/h);h=max;}
+        var cv=document.createElement('canvas');cv.width=w;cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        try{ cb(cv.toDataURL('image/jpeg',0.55)); }catch(err){ cb(null); }
+      };
+      img.onerror=function(){cb(null)};
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+  window.handleFichePhotos=function(ev,prefix){
+    var files=ev.target.files; if(!files) return;
+    Array.prototype.slice.call(files).forEach(function(f){
+      if(!f.type||f.type.indexOf('image')!==0) return;
+      compressImage(f,function(url){ if(url){ window._fichePhotos.push(url); renderThumbs(prefix); } });
+    });
+    ev.target.value='';
+  };
+  window.removeFichePhoto=function(i,prefix){ window._fichePhotos.splice(i,1); renderThumbs(prefix); };
+  function renderThumbs(prefix){
+    var el=document.getElementById(prefix+'-photos'); if(!el) return;
+    var ph=window._fichePhotos;
+    var grid=ph.map(function(u,i){
+      return '<div style="position:relative"><img src="'+u+'" style="width:100%;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border)"><button type="button" onclick="removeFichePhoto('+i+',\''+prefix+'\')" style="position:absolute;top:2px;right:2px;background:rgba(220,38,38,.9);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:13px;cursor:pointer;line-height:1">✕</button></div>';
+    }).join('');
+    el.innerHTML='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px">'+grid+'</div>'+
+      '<button type="button" class="btn-secondary" style="width:100%;font-size:13px" onclick="document.getElementById(\''+prefix+'-photoinput\').click()">📷 Ajouter des photos</button>'+
+      '<input type="file" id="'+prefix+'-photoinput" accept="image/*" multiple style="display:none" onchange="handleFichePhotos(event,\''+prefix+'\')">'+
+      '<div style="font-size:11px;color:var(--muted);margin-top:6px">'+ph.length+' photo(s) · compressées pour économiser la mémoire</div>';
+  }
+
+  var TYPES=['Appartement','Maison','Local commercial','Terrain','Immeuble'];
+  var ETATS=['Bon état','Neuf','Rénové','À rafraîchir','À rénover'];
+  var DPE=['Vierge','A','B','C','D','E','F','G'];
+  var PARKINGS=['Aucun','Garage','Parking','Carport','Plusieurs'];
+  var EXTERS=['Aucun','Jardin','Terrasse','Balcon','Cour'];
+
+  function buildFiche(prefix,includeBasics){
+    var h='';
+    h+='<div style="font-size:12px;font-weight:700;color:var(--pink);text-transform:uppercase;letter-spacing:.5px;margin:.5rem 0">👤 Propriétaire(s)</div>';
+    h+='<div class="field-row"><div class="field"><label>Nom</label><input id="'+prefix+'-pnom" type="text" placeholder="Dupont"></div><div class="field"><label>Prénom</label><input id="'+prefix+'-pprenom" type="text" placeholder="Jean"></div></div>';
+    h+='<div class="field-row"><div class="field"><label>Téléphone</label><input id="'+prefix+'-ptel" type="tel" placeholder="06 .."></div><div class="field"><label>Email</label><input id="'+prefix+'-pemail" type="email" placeholder="optionnel"></div></div>';
+    h+='<div class="field"><label>Adresse postale du propriétaire</label><input id="'+prefix+'-paddr" type="text" placeholder="Si différente du bien"></div>';
+    h+='<div class="field"><label>Autres propriétaires / indivision</label><textarea id="'+prefix+'-pautres" placeholder="Co-indivisaires, héritiers…"></textarea></div>';
+    h+='<div style="font-size:12px;font-weight:700;color:var(--pink);text-transform:uppercase;letter-spacing:.5px;margin:.75rem 0 .5rem">🏠 Le bien</div>';
+    if(includeBasics){
+      h+='<div class="field"><label>Adresse du bien</label><input id="'+prefix+'-adresse" type="text" placeholder="12 rue des Lilas, Béthune"></div>';
+      h+='<div class="field-row"><div class="field"><label>Type</label><select id="'+prefix+'-type">'+opt(TYPES)+'</select></div><div class="field"><label>Prix estimé (€)</label><input id="'+prefix+'-prix" type="number" placeholder="178000"></div></div>';
+    }
+    h+='<div class="field-row"><div class="field"><label>Surface habitable (m²)</label><input id="'+prefix+'-surface" type="number" placeholder="105"></div><div class="field"><label>Terrain (m²)</label><input id="'+prefix+'-terrain" type="number" placeholder="optionnel"></div></div>';
+    h+='<div class="field-row"><div class="field"><label>Pièces</label><input id="'+prefix+'-pieces" type="number" placeholder="4"></div><div class="field"><label>Chambres</label><input id="'+prefix+'-chambres" type="number" placeholder="3"></div></div>';
+    h+='<div class="field-row"><div class="field"><label>Étage / niveaux</label><input id="'+prefix+'-etage" type="text" placeholder="RDC, 2 niveaux…"></div><div class="field"><label>Année construction</label><input id="'+prefix+'-annee" type="text" placeholder="1975"></div></div>';
+    h+='<div class="field-row"><div class="field"><label>État</label><select id="'+prefix+'-etat">'+opt(ETATS)+'</select></div><div class="field"><label>Chauffage</label><input id="'+prefix+'-chauffage" type="text" placeholder="Gaz, PAC…"></div></div>';
+    h+='<div class="field-row"><div class="field"><label>DPE</label><select id="'+prefix+'-dpe">'+opt(DPE)+'</select></div><div class="field"><label>GES</label><select id="'+prefix+'-ges">'+opt(DPE)+'</select></div></div>';
+    h+='<div class="field-row"><div class="field"><label>Stationnement</label><select id="'+prefix+'-parking">'+opt(PARKINGS)+'</select></div><div class="field"><label>Extérieur</label><select id="'+prefix+'-exterieur">'+opt(EXTERS)+'</select></div></div>';
+    h+='<div class="field"><label>Atouts / points forts</label><textarea id="'+prefix+'-atouts" placeholder="Lumineux, sans travaux, proche écoles…"></textarea></div>';
+    h+='<div class="field"><label>Travaux à prévoir</label><textarea id="'+prefix+'-travaux" placeholder="Toiture, fenêtres…"></textarea></div>';
+    h+='<div class="field"><label>Motivation / délai de vente</label><textarea id="'+prefix+'-motivation" placeholder="Mutation, succession, sous 6 mois…"></textarea></div>';
+    h+='<div style="font-size:12px;font-weight:700;color:var(--pink);text-transform:uppercase;letter-spacing:.5px;margin:.75rem 0 .5rem">📷 Photos</div>';
+    h+='<div id="'+prefix+'-photos"></div>';
+    return h;
+  }
+  function readFiche(prefix,includeBasics){
+    var o={pnom:val(prefix+'-pnom').trim(),pprenom:val(prefix+'-pprenom').trim(),ptel:val(prefix+'-ptel').trim(),pemail:val(prefix+'-pemail').trim(),paddr:val(prefix+'-paddr').trim(),pautres:val(prefix+'-pautres').trim(),
+      surface:val(prefix+'-surface'),terrain:val(prefix+'-terrain'),pieces:val(prefix+'-pieces'),chambres:val(prefix+'-chambres'),etage:val(prefix+'-etage').trim(),annee:val(prefix+'-annee').trim(),
+      etat:val(prefix+'-etat'),chauffage:val(prefix+'-chauffage').trim(),dpe:val(prefix+'-dpe'),ges:val(prefix+'-ges'),parking:val(prefix+'-parking'),exterieur:val(prefix+'-exterieur'),
+      atouts:val(prefix+'-atouts').trim(),travaux:val(prefix+'-travaux').trim(),motivation:val(prefix+'-motivation').trim(),photos:window._fichePhotos.slice()};
+    if(includeBasics){ o.adresse=val(prefix+'-adresse').trim(); o.type=val(prefix+'-type'); o.prix=Number(val(prefix+'-prix'))||0; }
+    return o;
+  }
+  function fillFiche(prefix,d,includeBasics){
+    d=d||{};
+    setVal(prefix+'-pnom',d.pnom);setVal(prefix+'-pprenom',d.pprenom);setVal(prefix+'-ptel',d.ptel);setVal(prefix+'-pemail',d.pemail);setVal(prefix+'-paddr',d.paddr);setVal(prefix+'-pautres',d.pautres);
+    setVal(prefix+'-surface',d.surface);setVal(prefix+'-terrain',d.terrain);setVal(prefix+'-pieces',d.pieces);setVal(prefix+'-chambres',d.chambres);setVal(prefix+'-etage',d.etage);setVal(prefix+'-annee',d.annee);
+    setVal(prefix+'-etat',d.etat||'Bon état');setVal(prefix+'-chauffage',d.chauffage);setVal(prefix+'-dpe',d.dpe||'Vierge');setVal(prefix+'-ges',d.ges||'Vierge');setVal(prefix+'-parking',d.parking||'Aucun');setVal(prefix+'-exterieur',d.exterieur||'Aucun');
+    setVal(prefix+'-atouts',d.atouts);setVal(prefix+'-travaux',d.travaux);setVal(prefix+'-motivation',d.motivation);
+    if(includeBasics){ setVal(prefix+'-adresse',d.adresse); setVal(prefix+'-type',d.type||'Appartement'); setVal(prefix+'-prix',d.prix||''); }
+    window._fichePhotos=(d.photos||[]).slice();
+    renderThumbs(prefix);
+  }
+
+  function injectLinkFields(){
+    var addr=document.getElementById('mp-addr');
+    if(addr && !document.getElementById('mp-mandat')){
+      var f=document.createElement('div'); f.className='field';
+      f.innerHTML='<label>Bien associé</label><select id="mp-mandat"><option value="">— Aucun bien associé —</option></select>';
+      var holder=addr.closest('.field'); holder.parentNode.insertBefore(f,holder.nextSibling);
+    }
+  }
+  function fillMandatSelect(selectedId){
+    var sel=document.getElementById('mp-mandat'); if(!sel) return;
+    sel.innerHTML='<option value="">— Aucun bien associé —</option>'+getMandats().map(function(m){return '<option value="'+m.id+'">'+esc(m.adresse)+' ('+m.etape+')</option>'}).join('');
+    sel.value=selectedId||'';
+  }
+  function fillContactSelect(selectedId){
+    var sel=document.getElementById('mm-contact'); if(!sel) return;
+    sel.innerHTML='<option value="">— Aucun contact associé —</option>'+getContacts().map(function(c){return '<option value="'+c.id+'">'+esc(c.nom)+'</option>'}).join('');
+    sel.value=selectedId||'';
+  }
+
+  window.openContactModal=function(c){
+    c=c||null; pEditId=c?c.id:null;
+    document.getElementById('mp-title').textContent=c?'Modifier':'Nouveau contact';
+    setVal('mp-nom',c&&c.nom);setVal('mp-tel',c&&c.tel);setVal('mp-email',c&&c.email);setVal('mp-addr',c&&c.addr);
+    setVal('mp-type',c&&c.type||'Propriétaire');setVal('mp-stat',c&&c.stat||'À appeler');setVal('mp-cont',c&&c.cont);setVal('mp-rapp',c&&c.rapp);setVal('mp-result',c&&c.result);setVal('mp-notes',c&&c.notes);
+    fillMandatSelect(c&&c.mandatId);
+    document.getElementById('modal-prospection').classList.add('open');
+  };
+  window.saveContact=function(){
+    var nom=val('mp-nom').trim(); if(!nom)return alert('Le nom est obligatoire.');
+    var mandatId=val('mp-mandat');
+    var entry={id:pEditId||Date.now().toString(),nom:nom,tel:val('mp-tel').trim(),email:val('mp-email').trim(),addr:val('mp-addr').trim(),type:val('mp-type'),stat:val('mp-stat'),cont:val('mp-cont'),rapp:val('mp-rapp'),result:val('mp-result'),notes:val('mp-notes').trim(),mandatId:mandatId||null};
+    var data=getContacts();
+    if(pEditId)saveContacts(data.map(function(c){return c.id===pEditId?entry:c}));else saveContacts(data.concat([entry]));
+    syncContactToMandat(entry.id,mandatId||null);
+    closeModal('modal-prospection'); refreshAll();
+  };
+
+  function injectFicheIntoMandat(){
+    var modal=document.getElementById('modal-mandat'); if(!modal) return;
+    if(document.getElementById('mf-pnom')) return;
+    var sheet=modal.querySelector('.modal-sheet'); var footer=modal.querySelector('.modal-footer');
+    var etape=document.getElementById('mm-etape');
+    if(etape && !document.getElementById('mm-contact')){
+      var fc=document.createElement('div'); fc.className='field';
+      fc.innerHTML='<label>Contact / propriétaire associé</label><select id="mm-contact"><option value="">— Aucun contact associé —</option></select>';
+      var holder=etape.closest('.field'); holder.parentNode.insertBefore(fc,holder.nextSibling);
+    }
+    var wrap=document.createElement('div');
+    wrap.innerHTML='<div style="margin:.5rem 0;padding-top:.75rem;border-top:1px dashed var(--border);font-size:13px;font-weight:700;color:var(--blue)">📋 Fiche technique du bien</div>'+buildFiche('mf',false);
+    sheet.insertBefore(wrap,footer);
+  }
+
+  window.openMandatModal=function(b){
+    b=b||null; mEditId=b?b.id:null;
+    document.getElementById('mm-title').textContent=b?'Modifier le mandat':'Nouveau mandat';
+    setVal('mm-adresse',b&&b.adresse);setVal('mm-type',b&&b.type||'Appartement');setVal('mm-mandat',b&&b.mandat||'exclusif');setVal('mm-etape',b&&b.etape||'Mandat');
+    setVal('mm-prix',b&&b.prix);setVal('mm-offre',b&&b.offre);
+    if(b){setCommType(b.commType||'pct');setVal('mm-commission-pct',b.commissionPct);setVal('mm-commission-fix',b.commissionFix);} else {setCommType('pct');}
+    setVal('mm-visites',b&&b.visites||0);setVal('mm-dentree',b&&b.dentree);setVal('mm-dexpir',b&&b.dexpir);
+    fillContactSelect(b&&b.contactId);
+    fillFiche('mf',b&&b.fiche,false);
+    document.getElementById('modal-mandat').classList.add('open');
+  };
+  window.saveMandat=function(){
+    var adresse=val('mm-adresse').trim(); if(!adresse)return alert("L'adresse est obligatoire.");
+    var contactId=val('mm-contact');
+    var entry={id:mEditId||Date.now().toString(),adresse:adresse,type:val('mm-type'),mandat:val('mm-mandat'),etape:val('mm-etape'),prix:Number(val('mm-prix'))||0,offre:val('mm-offre')?Number(val('mm-offre')):null,commType:commType,commissionPct:Number(val('mm-commission-pct'))||0,commissionFix:Number(val('mm-commission-fix'))||0,visites:Number(val('mm-visites'))||0,dentree:val('mm-dentree'),dexpir:val('mm-dexpir'),contactId:contactId||null,fiche:readFiche('mf',false)};
+    var data=getMandats();
+    if(!safeStore(function(){ if(mEditId)saveMandats(data.map(function(b){return b.id===mEditId?entry:b}));else saveMandats(data.concat([entry])); })) return;
+    syncMandatToContact(entry.id,contactId||null);
+    closeModal('modal-mandat'); refreshAll();
+  };
+
+  window.renderProspection=function(){
+    var data=getContacts();
+    var q=(val('p-search')||'').toLowerCase();
+    var urg=data.filter(function(c){var n=daysFrom(c.rapp);return n!==null&&n>=0&&n<=3}).length;
+    document.getElementById('p-stats').innerHTML=[
+      {l:'Total contacts',v:data.length,c:'var(--blue)'},{l:'Rappels urgents',v:urg,c:urg>0?'var(--red)':'var(--blue)'},
+      {l:'Intéressés',v:data.filter(function(c){return c.stat==='Intéressé'}).length,c:'var(--blue)'},{l:'Gagnés',v:data.filter(function(c){return c.stat==='Gagné'}).length,c:'var(--pink)'},
+    ].map(function(s){return '<div class="stat-card"><div class="stat-label">'+s.l+'</div><div class="stat-val" style="color:'+s.c+'">'+s.v+'</div></div>'}).join('');
+    var statuts=['Tous','À appeler','En cours','Intéressé','Pas prêt','Refus','Gagné','Perdu'];
+    document.getElementById('p-filters').innerHTML=statuts.map(function(s){return '<button class="filter-chip'+(pFilter===s?' active':'')+'" onclick="setPFilter(\''+s+'\')">'+s+'</button>'}).join('');
+    var rows=data; if(pFilter!=='Tous')rows=rows.filter(function(c){return c.stat===pFilter}); if(q)rows=rows.filter(function(c){return (''+c.nom+c.addr+c.notes).toLowerCase().indexOf(q)>=0});
+    var el=document.getElementById('p-cards');
+    if(!rows.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Aucun contact<br><span style="font-size:13px">Appuie sur + pour en ajouter</span></div></div>';return}
+    el.innerHTML=rows.map(function(c){
+      var tc=TC[c.type]||{bg:'#f1f5f9',tx:'#64748b'}, sc=SC[c.stat]||{bg:'#f1f5f9',tx:'#64748b'}, r=rappelLbl(c.rapp);
+      var lien=(c.mandatId&&mandatById(c.mandatId))?'<div class="link-chip pink" onclick="jumpLink(event,\'mandats\')">🏠 '+esc(mandatById(c.mandatId).adresse)+'</div>':'';
+      return '<div class="item-card"><div class="card-header"><span class="badge" style="background:'+tc.bg+';color:'+tc.tx+'">'+c.type+'</span><span class="badge" style="background:'+sc.bg+';color:'+sc.tx+'">'+c.stat+'</span></div>'+
+        '<div class="card-title">'+esc(c.nom)+'</div><div class="card-sub">'+(c.tel||'')+((c.tel&&c.addr)?' · ':'')+(c.addr||'')+'</div>'+lien+
+        '<div class="card-row"><div><div class="card-field-label">1er contact</div><div class="card-field-val" style="font-size:13px">'+fmtd(c.cont)+'</div></div><div><div class="card-field-label">Rappel</div><div class="card-field-val '+r.cls+'" style="font-size:13px">'+r.lbl+'</div></div></div>'+
+        (c.result?'<div style="font-size:12px;color:var(--blue);font-weight:600;margin-bottom:4px">'+esc(c.result)+'</div>':'')+
+        (c.notes?'<div style="font-size:12px;color:var(--muted);margin-bottom:8px">'+esc(c.notes)+'</div>':'')+
+        '<div class="card-footer"><span></span><div class="card-actions"><button class="act-btn" onclick="editContact(\''+c.id+'\')">Modifier</button><button class="act-btn danger" onclick="delContact(\''+c.id+'\')">Suppr.</button></div></div></div>';
+    }).join('');
+  };
+  window.renderMandats=function(){
+    var data=getMandats(); var totalComm=data.reduce(function(s,b){return s+calcComm(b)},0);
+    document.getElementById('m-stats').innerHTML=[
+      {l:'Total mandats',v:data.length,c:'var(--blue)'},{l:'Commissions',v:fmt(totalComm),c:'var(--pink)'},
+      {l:'En cours',v:data.filter(function(b){return b.etape!=='Vendu'}).length,c:'var(--blue)'},{l:'Ventes signées',v:data.filter(function(b){return b.etape==='Vendu'}).length,c:'var(--green)'},
+    ].map(function(s){return '<div class="stat-card"><div class="stat-label">'+s.l+'</div><div class="stat-val" style="color:'+s.c+'">'+s.v+'</div></div>'}).join('');
+    document.getElementById('m-pipeline').innerHTML=ETAPES.map(function(e){var c=ECOLS[e],count=data.filter(function(b){return b.etape===e}).length;return '<div class="pipe-item" style="border-top-color:'+c.dot+'"><div class="pipe-count" style="color:'+c.dot+'">'+count+'</div><div class="pipe-label">'+e+'</div></div>'}).join('');
+    document.getElementById('m-filters').innerHTML=['Tous'].concat(ETAPES).map(function(e){return '<button class="filter-chip'+(mFilter===e?' active':'')+'" onclick="setMFilter(\''+e+'\')">'+e+(e!=='Tous'?' ('+data.filter(function(b){return b.etape===e}).length+')':'')+'</button>'}).join('');
+    var rows=mFilter==='Tous'?data:data.filter(function(b){return b.etape===mFilter});
+    var el=document.getElementById('m-cards');
+    if(!rows.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">🏠</div><div class="empty-text">Aucun mandat'+(mFilter!=='Tous'?' dans cette étape':'')+'<br><span style="font-size:13px">Appuie sur + pour en ajouter</span></div></div>';return}
+    el.innerHTML=rows.map(function(b){
+      var c=ECOLS[b.etape],j=daysFrom(b.dexpir);
+      var jcol=j===null?'var(--muted)':j<0?'var(--red)':j<=30?'var(--orange)':'var(--muted)';
+      var jlbl=j===null?'—':j<0?'Expiré ⚠':j===0?'Auj. ⚠':j===1?'Demain':(j+'j'+(j<=30?' ⚠':''));
+      var commAff=b.commType==='fix'?fmt(b.commissionFix):(b.commissionPct+'% → '+fmt(calcComm(b)));
+      var lien=(b.contactId&&contactById(b.contactId))?'<div class="link-chip" onclick="jumpLink(event,\'prospection\')">👤 '+esc(contactById(b.contactId).nom)+'</div>':'';
+      var ph=(b.fiche&&b.fiche.photos&&b.fiche.photos.length)?'<span style="font-size:11px;color:var(--muted)">📷 '+b.fiche.photos.length+'</span>':'';
+      return '<div class="item-card"><div class="card-header"><span class="badge" style="background:'+c.bg+';color:'+c.tx+'"><span class="badge-dot" style="background:'+c.dot+'"></span>'+b.etape+'</span><span style="font-size:11px;color:'+(b.mandat==='exclusif'?'var(--pink)':'var(--muted)')+';font-weight:600">Mandat '+b.mandat+'</span></div>'+
+        '<div class="card-title">'+esc(b.adresse)+'</div><div class="card-sub">'+b.type+' '+ph+'</div>'+lien+
+        '<div class="card-row"><div><div class="card-field-label">Prix demandé</div><div class="card-field-val">'+fmt(b.prix)+'</div></div><div><div class="card-field-label">Offre reçue</div><div class="card-field-val" style="color:'+(b.offre?'var(--green)':'var(--muted)')+'">'+fmt(b.offre)+'</div></div><div><div class="card-field-label">Commission</div><div class="card-field-val" style="color:var(--pink);font-size:12px">'+commAff+'</div></div><div><div class="card-field-label">Expiration</div><div class="card-field-val" style="color:'+jcol+';font-size:13px">'+jlbl+'</div></div></div>'+
+        '<div class="card-footer"><span>'+(b.visites||0)+' visite'+(b.visites>1?'s':'')+' · '+fmtd(b.dentree)+'</span><div class="card-actions"><button class="act-btn" onclick="editMandat(\''+b.id+'\')">Modifier</button><button class="act-btn danger" onclick="delMandat(\''+b.id+'\')">Suppr.</button></div></div></div>';
+    }).join('');
+  };
+
+  var STATUTS_E=['À estimer','Estimation faite','En réflexion','À relancer','Perdue'];
+  var SE={'À estimer':{bg:'#fef3c7',tx:'#92400e'},'Estimation faite':{bg:'#e8eef7',tx:'#1B3A6B'},'En réflexion':{bg:'#fce4f3',tx:'#9c0f60'},'À relancer':{bg:'#fee2e2',tx:'#991b1b'},'Perdue':{bg:'#f1f5f9',tx:'#64748b'}};
+  function getEstim(){ return uload(viewUser(),'estimations',[]); }
+  function saveEstim(d){ usave('estimations',d); }
+  var estimEditId=null;
+
+  function injectEstimModal(){
+    if(document.getElementById('modal-estim')) return;
+    var m=document.createElement('div'); m.className='modal-overlay'; m.id='modal-estim';
+    m.innerHTML='<div class="modal-sheet"><div class="modal-handle"></div><div class="modal-title" id="me-estim-title">Nouvelle estimation</div>'+
+      buildFiche('es',true)+
+      '<div style="font-size:12px;font-weight:700;color:var(--pink);text-transform:uppercase;letter-spacing:.5px;margin:.75rem 0 .5rem">📌 Suivi</div>'+
+      '<div class="field"><label>Statut</label><select id="es-statut">'+opt(STATUTS_E)+'</select></div>'+
+      '<div class="field-row"><div class="field"><label>Date du RDV estimation</label><input id="es-daterdv" type="date"></div><div class="field"><label>Rappel / relance</label><input id="es-relance" type="date"></div></div>'+
+      '<div class="field"><label>Notes de suivi</label><textarea id="es-notes" placeholder="Échanges, suite à donner…"></textarea></div>'+
+      '<div class="modal-footer"><button class="btn-cancel" onclick="closeModal(\'modal-estim\')">Annuler</button><button class="btn-save" onclick="saveEstimation()">Enregistrer</button></div></div>';
+    document.body.appendChild(m);
+  }
+  window.openEstimationModal=function(e){
+    e=e||null; estimEditId=e?e.id:null;
+    document.getElementById('me-estim-title').textContent=e?'Modifier l\'estimation':'Nouvelle estimation';
+    fillFiche('es',e,true);
+    setVal('es-statut',e&&e.statut||'À estimer');setVal('es-daterdv',e&&e.daterdv);setVal('es-relance',e&&e.relance);setVal('es-notes',e&&e.notes);
+    document.getElementById('modal-estim').classList.add('open');
+  };
+  window.saveEstimation=function(){
+    var f=readFiche('es',true);
+    if(!f.adresse && !f.pnom)return alert('Renseigne au moins l\'adresse du bien ou le nom du propriétaire.');
+    var entry=Object.assign({id:estimEditId||Date.now().toString()},f,{statut:val('es-statut'),daterdv:val('es-daterdv'),relance:val('es-relance'),notes:val('es-notes').trim()});
+    var data=getEstim();
+    if(!safeStore(function(){ if(estimEditId)saveEstim(data.map(function(x){return x.id===estimEditId?entry:x}));else saveEstim(data.concat([entry])); })) return;
+    closeModal('modal-estim'); refreshAll();
+  };
+  window.editEstimation=function(id){ var e=getEstim().find(function(x){return x.id===id}); if(e)openEstimationModal(e); };
+  window.delEstimation=function(id){ if(!confirm('Supprimer cette estimation ?'))return; saveEstim(getEstim().filter(function(x){return x.id!==id})); refreshAll(); };
+  window.convertEstimationToMandat=function(id){
+    var e=getEstim().find(function(x){return x.id===id}); if(!e)return;
+    if(!confirm('Convertir en mandat ? L\'estimation passera dans l\'onglet Mandats.'))return;
+    var mandat={id:Date.now().toString(),adresse:e.adresse||'',type:e.type||'Appartement',mandat:'exclusif',etape:'Mandat',prix:Number(e.prix)||0,offre:null,commType:'pct',commissionPct:0,commissionFix:0,visites:0,dentree:new Date().toISOString().split('T')[0],dexpir:'',contactId:null,
+      fiche:{pnom:e.pnom,pprenom:e.pprenom,ptel:e.ptel,pemail:e.pemail,paddr:e.paddr,pautres:e.pautres,surface:e.surface,terrain:e.terrain,pieces:e.pieces,chambres:e.chambres,etage:e.etage,annee:e.annee,etat:e.etat,chauffage:e.chauffage,dpe:e.dpe,ges:e.ges,parking:e.parking,exterieur:e.exterieur,atouts:e.atouts,travaux:e.travaux,motivation:e.motivation,photos:e.photos||[]}};
+    if(!safeStore(function(){ saveMandats(getMandats().concat([mandat])); saveEstim(getEstim().filter(function(x){return x.id!==id})); })) return;
+    setBiensView('mandats'); refreshAll();
+    alert('✅ Estimation convertie en mandat ! Pense à compléter le prix et la commission.');
+  };
+  window.renderEstimations=function(){
+    var host=document.getElementById('biens-estim-view'); if(!host) return;
+    var data=getEstim();
+    var arelancer=data.filter(function(e){var n=daysFrom(e.relance);return n!==null&&n>=0&&n<=3}).length;
+    var stats='<div class="stats-row"><div class="stat-card"><div class="stat-label">Estimations</div><div class="stat-val">'+data.length+'</div></div><div class="stat-card"><div class="stat-label">À relancer</div><div class="stat-val" style="color:'+(arelancer>0?'var(--red)':'var(--blue)')+'">'+arelancer+'</div></div></div>';
+    var cards;
+    if(!data.length){
+      cards='<div class="empty-state"><div class="empty-icon">🎯</div><div class="empty-text">Aucune estimation en cours<br><span style="font-size:13px">Appuie sur + pour en ajouter une</span></div></div>';
+    } else {
+      cards=data.map(function(e){
+        var sc=SE[e.statut]||{bg:'#f1f5f9',tx:'#64748b'};
+        var r=rappelLbl(e.relance);
+        var prop=(e.pnom||e.pprenom)?('👤 '+esc((e.pprenom||'')+' '+(e.pnom||'')).trim()):'';
+        var ph=(e.photos&&e.photos.length)?'<span style="font-size:11px;color:var(--muted)"> · 📷 '+e.photos.length+'</span>':'';
+        return '<div class="item-card"><div class="card-header"><span class="badge" style="background:'+sc.bg+';color:'+sc.tx+'">'+(e.statut||'À estimer')+'</span>'+(e.prix?'<span style="font-size:13px;font-weight:700;color:var(--blue)">'+fmt(e.prix)+'</span>':'')+'</div>'+
+          '<div class="card-title">'+esc(e.adresse||'(adresse à renseigner)')+'</div><div class="card-sub">'+(e.type||'')+(prop?' · '+prop:'')+ph+'</div>'+
+          '<div class="card-row"><div><div class="card-field-label">RDV estimation</div><div class="card-field-val" style="font-size:13px">'+fmtd(e.daterdv)+'</div></div><div><div class="card-field-label">À relancer</div><div class="card-field-val '+r.cls+'" style="font-size:13px">'+r.lbl+'</div></div></div>'+
+          (e.notes?'<div style="font-size:12px;color:var(--muted);margin-bottom:8px">'+esc(e.notes)+'</div>':'')+
+          '<div class="card-footer"><span></span><div class="card-actions"><button class="act-btn success" onclick="convertEstimationToMandat(\''+e.id+'\')">✅ En mandat</button><button class="act-btn" onclick="editEstimation(\''+e.id+'\')">Modifier</button><button class="act-btn danger" onclick="delEstimation(\''+e.id+'\')">Suppr.</button></div></div></div>';
+      }).join('');
+    }
+    host.innerHTML=stats+cards;
+  };
+
+  var MANDAT_BLOCKS=['admin-m-selector','m-stats','m-pipeline','m-filters','m-cards'];
+  function injectBiensUI(){
+    var page=document.getElementById('page-mandats'); if(!page) return;
+    if(document.getElementById('biens-toggle')) return;
+    var toggle=document.createElement('div'); toggle.className='toggle-row'; toggle.id='biens-toggle';
+    toggle.innerHTML='<button class="toggle-btn active" id="biens-mandats-btn" onclick="setBiensView(\'mandats\')">🏠 Mandats</button><button class="toggle-btn" id="biens-estim-btn" onclick="setBiensView(\'estimations\')">🎯 Estimations</button>';
+    page.insertBefore(toggle,page.firstChild.nextSibling);
+    var estim=document.createElement('div'); estim.id='biens-estim-view'; estim.style.display='none';
+    page.appendChild(estim);
+  }
+  window.setBiensView=function(v){
+    window.biensView=v;
+    var mb=document.getElementById('biens-mandats-btn'), eb=document.getElementById('biens-estim-btn');
+    if(mb)mb.classList.toggle('active',v==='mandats'); if(eb)eb.classList.toggle('active',v==='estimations');
+    MANDAT_BLOCKS.forEach(function(id){var el=document.getElementById(id); if(el)el.style.display=(v==='mandats'?'':'none');});
+    var estim=document.getElementById('biens-estim-view'); if(estim)estim.style.display=(v==='estimations'?'block':'none');
+    if(v==='mandats'){ try{renderMandats()}catch(e){} } else { try{renderEstimations()}catch(e){} }
+  };
+  function relabelBiens(){
+    var tabs=document.getElementById('main-tabs');
+    if(tabs){ Array.prototype.forEach.call(tabs.querySelectorAll('.tab'),function(b){ var oc=b.getAttribute('onclick')||''; if(oc.indexOf("'mandats'")>=0 && b.textContent.indexOf('Biens')<0){ b.innerHTML='📁 Biens'; } }); }
+    var nav=document.getElementById('nav-current-title'); if(nav && nav.textContent.indexOf('Mandats')>=0){ nav.textContent='📁 Biens'; }
+  }
+  function observeRelabel(){
+    var tabs=document.getElementById('main-tabs');
+    if(tabs && window.MutationObserver){ new MutationObserver(relabelBiens).observe(tabs,{childList:true,subtree:true}); }
+    var today=document.getElementById('today-content');
+    if(today && window.MutationObserver){ new MutationObserver(function(){
+      Array.prototype.forEach.call(today.querySelectorAll('.home-tile'),function(t){ var oc=t.getAttribute('onclick')||''; if(oc.indexOf("'mandats'")>=0){ var ti=t.querySelector('.home-tile-title'); if(ti&&ti.textContent.indexOf('Biens')<0)ti.textContent='Biens'; } });
+    }).observe(today,{childList:true,subtree:true}); }
+  }
+
+  var _origOpenAddModal=window.openAddModal;
+  window.openAddModal=function(){
+    if(currentTab==='mandats'){ if(window.biensView==='estimations') return openEstimationModal(); return openMandatModal(); }
+    if(typeof _origOpenAddModal==='function') return _origOpenAddModal();
+  };
+
+  function injectVentesToggle(){
+    var row=document.querySelector('#page-kanban .toggle-row'); if(!row) return;
+    if(document.getElementById('kanban-ventes-btn')) return;
+    var b=document.createElement('button'); b.className='toggle-btn'; b.id='kanban-ventes-btn'; b.setAttribute('onclick',"setKanbanType('ventes')"); b.innerHTML='💰 Ventes';
+    row.appendChild(b);
+  }
+  window.setKanbanType=function(t){
+    kanbanType=t;
+    [['kanban-prospects-btn','prospects'],['kanban-mandats-btn','mandats'],['kanban-ventes-btn','ventes']].forEach(function(p){ var el=document.getElementById(p[0]); if(el)el.classList.toggle('active',t===p[1]); });
+    renderKanban();
+  };
+  window.renderKanban=function(){
+    var board=document.getElementById('kanban-board'); if(!board) return;
+    if(kanbanType==='prospects'){
+      var data=getContacts();
+      board.innerHTML=PROSPECT_STAGES.map(function(stage){
+        var items=data.filter(function(c){return c.stat===stage});
+        return '<div class="kanban-col"><div class="kanban-col-header" style="color:'+PROSPECT_STAGE_TXT[stage]+'"><span>'+stage+'</span><span class="kanban-col-count">'+items.length+'</span></div><div class="kanban-cards">'+
+          (items.length?items.map(function(c){
+            var lien=(c.mandatId&&mandatById(c.mandatId))?'<div style="font-size:10px;color:var(--blue2);margin-top:4px">🏠 '+esc(mandatById(c.mandatId).adresse)+'</div>':'';
+            return '<div class="kanban-card" onclick="changeStage(\'prospect\',\''+c.id+'\')"><div class="kanban-card-title">'+esc(c.nom)+'</div><div class="kanban-card-sub">'+(c.tel||c.addr||'')+'</div><div class="kanban-card-meta"><span class="kanban-card-tag" style="background:'+PROSPECT_STAGE_COLORS[stage]+';color:'+PROSPECT_STAGE_TXT[stage]+'">'+c.type+'</span>'+(c.rapp?'<span style="font-size:10px;color:var(--muted)">📅 '+fmtd(c.rapp)+'</span>':'')+'</div>'+lien+'</div>';
+          }).join(''):'<div class="kanban-empty">Aucun</div>')+'</div></div>';
+      }).join('');
+    } else if(kanbanType==='mandats'){
+      var dm=getMandats();
+      board.innerHTML=ETAPES.map(function(stage){
+        var items=dm.filter(function(b){return b.etape===stage}); var c=ECOLS[stage];
+        return '<div class="kanban-col"><div class="kanban-col-header" style="color:'+c.tx+'"><span>'+stage+'</span><span class="kanban-col-count">'+items.length+'</span></div><div class="kanban-cards">'+
+          (items.length?items.map(function(m){
+            var lien=(m.contactId&&contactById(m.contactId))?'<div style="font-size:10px;color:#9c0f60;margin-top:4px">👤 '+esc(contactById(m.contactId).nom)+'</div>':'';
+            return '<div class="kanban-card" onclick="changeStage(\'mandat\',\''+m.id+'\')"><div class="kanban-card-title">'+esc(m.adresse)+'</div><div class="kanban-card-sub">'+m.type+' · '+fmt(m.prix)+'</div><div class="kanban-card-meta"><span class="kanban-card-tag" style="background:'+c.bg+';color:'+c.tx+'">'+m.mandat+'</span><span style="font-size:10px;color:var(--pink);font-weight:600">'+fmt(calcComm(m))+'</span></div>'+lien+'</div>';
+          }).join(''):'<div class="kanban-empty">Aucun</div>')+'</div></div>';
+      }).join('');
+    } else {
+      var dv=getVentes();
+      board.innerHTML=VENTE_STEPS.map(function(stage,i){
+        var items=dv.filter(function(v){return Number(v.etape)===i}); var col=VSTEP_COLS[i];
+        return '<div class="kanban-col"><div class="kanban-col-header" style="color:'+col+'"><span>'+stage+'</span><span class="kanban-col-count">'+items.length+'</span></div><div class="kanban-cards">'+
+          (items.length?items.map(function(v){
+            return '<div class="kanban-card" onclick="changeStage(\'vente\',\''+v.id+'\')"><div class="kanban-card-title">'+esc(v.adresse)+'</div><div class="kanban-card-sub">'+fmt(v.prix)+'</div><div class="kanban-card-meta"><span class="kanban-card-tag" style="background:'+col+'22;color:'+col+'">'+stage+'</span><span style="font-size:10px;color:var(--pink);font-weight:600">'+fmt(v.commission)+'</span></div></div>';
+          }).join(''):'<div class="kanban-empty">Aucune</div>')+'</div></div>';
+      }).join('');
+    }
+  };
+
+  window.changeStage=function(type,id){
+    stageChangeContext={type:type,id:id};
+    var item,stages,currentStage,label,colorOf;
+    if(type==='prospect'){ item=getContacts().find(function(c){return c.id===id}); stages=PROSPECT_STAGES; currentStage=item.stat; label=item.nom; colorOf=function(s){return {bg:PROSPECT_STAGE_COLORS[s],tx:PROSPECT_STAGE_TXT[s]}}; }
+    else if(type==='mandat'){ item=getMandats().find(function(m){return m.id===id}); stages=ETAPES; currentStage=item.etape; label=item.adresse; colorOf=function(s){return {bg:ECOLS[s].bg,tx:ECOLS[s].tx}}; }
+    else { item=getVentes().find(function(v){return v.id===id}); stages=VENTE_STEPS; currentStage=VENTE_STEPS[Number(item.etape)]||VENTE_STEPS[0]; label=item.adresse; colorOf=function(s){var i=VENTE_STEPS.indexOf(s);return {bg:VSTEP_COLS[i]+'22',tx:VSTEP_COLS[i]}}; }
+    document.getElementById('stage-item-name').textContent=label;
+    document.getElementById('stage-options').innerHTML=stages.map(function(s){
+      var col=colorOf(s); var cur=s===currentStage;
+      return '<button onclick="applyStageChange(\''+s.replace(/'/g,"\\'")+'\')" style="display:block;width:100%;padding:12px;margin-bottom:8px;border:2px solid '+(cur?col.tx:'var(--border)')+';border-radius:12px;background:'+(cur?col.bg:'#fff')+';color:'+col.tx+';font-size:14px;font-weight:600;cursor:pointer;text-align:left">'+(cur?'✓ ':'')+s+'</button>';
+    }).join('');
+    document.getElementById('modal-stage').classList.add('open');
+  };
+  window.applyStageChange=function(newStage){
+    if(!stageChangeContext) return;
+    var type=stageChangeContext.type,id=stageChangeContext.id;
+    if(type==='prospect'){ saveContacts(getContacts().map(function(c){return c.id===id?Object.assign({},c,{stat:newStage}):c})); }
+    else if(type==='mandat'){ saveMandats(getMandats().map(function(m){return m.id===id?Object.assign({},m,{etape:newStage}):m})); }
+    else { var idx=VENTE_STEPS.indexOf(newStage); if(idx<0)idx=0; saveVentes(getVentes().map(function(v){return v.id===id?Object.assign({},v,{etape:String(idx)}):v})); }
+    closeModal('modal-stage'); refreshAll();
+  };
+
+  function injectVentesFilter(){
+    var page=document.getElementById('page-ventes'); if(!page) return;
+    if(document.getElementById('vente-filter')) return;
+    var cards=document.getElementById('v-cards'); if(!cards) return;
+    var bar=document.createElement('div'); bar.className='toggle-row'; bar.id='vente-filter';
+    bar.innerHTML='<button class="toggle-btn active" id="vf-all" onclick="setVenteFilter(\'all\')">Toutes</button><button class="toggle-btn" id="vf-encours" onclick="setVenteFilter(\'encours\')">En cours</button><button class="toggle-btn" id="vf-signe" onclick="setVenteFilter(\'signe\')">✅ Signées</button>';
+    cards.parentNode.insertBefore(bar,cards);
+  }
+  window.setVenteFilter=function(f){
+    window.venteFilter=f;
+    [['vf-all','all'],['vf-encours','encours'],['vf-signe','signe']].forEach(function(p){var el=document.getElementById(p[0]);if(el)el.classList.toggle('active',f===p[1]);});
+    renderVentes();
+  };
+  window.renderVentes=function(){
+    var all=getVentes();
+    var totalComm=all.reduce(function(s,v){return s+(v.commission||0)},0);
+    var signees=all.filter(function(v){return Number(v.etape)===3}).length;
+    document.getElementById('v-stats').innerHTML=[
+      {l:'Ventes suivies',v:all.length,c:'var(--blue)'},{l:'Actes signés',v:signees,c:'var(--green)'},
+      {l:'En cours',v:all.filter(function(v){return Number(v.etape)<3}).length,c:'var(--orange)'},{l:'Commissions',v:fmt(totalComm),c:'var(--pink)'},
+    ].map(function(s){return '<div class="stat-card"><div class="stat-label">'+s.l+'</div><div class="stat-val" style="color:'+s.c+'">'+s.v+'</div></div>'}).join('');
+    var data=all;
+    if(window.venteFilter==='encours')data=all.filter(function(v){return Number(v.etape)<3});
+    else if(window.venteFilter==='signe')data=all.filter(function(v){return Number(v.etape)===3});
+    var el=document.getElementById('v-cards');
+    if(!data.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">💰</div><div class="empty-text">'+(window.venteFilter==='signe'?'Aucune vente signée pour le moment':(window.venteFilter==='encours'?'Aucune vente en cours':'Aucune vente suivie'))+'<br><span style="font-size:13px">Appuie sur + pour en ajouter</span></div></div>';return}
+    el.innerHTML=data.map(function(v){
+      var etape=Number(v.etape);
+      var stepsHtml=VENTE_STEPS.map(function(s,i){
+        var done=i<=etape; var dotStyle='background:'+(done?VSTEP_COLS[i]:'#e2e8f0')+';color:'+(done?'#fff':'#94a3b8');
+        return '<div class="vente-step"><div class="vente-dot" style="'+dotStyle+'">'+(done?'✓':i+1)+'</div><div style="font-size:9px;color:'+(done?VSTEP_COLS[i]:'var(--muted)')+';text-align:center;margin-top:4px;max-width:55px">'+s+'</div></div>'+(i<3?'<div class="vente-line" style="background:'+(i<etape?VSTEP_COLS[i]:'#e2e8f0')+'"></div>':'');
+      }).join('');
+      var dates=[v.d0,v.d1,v.d2,v.d3]; var dateLabel=dates[etape]?'📅 '+fmtd(dates[etape]):'';
+      return '<div class="vente-card"><div class="card-header"><span class="badge" style="background:'+VSTEP_COLS[etape]+'22;color:'+VSTEP_COLS[etape]+'">'+VENTE_STEPS[etape]+'</span>'+(etape===3?'<span class="badge" style="background:#dcfce7;color:#14532d">Signé définitivement</span>':'')+'</div>'+
+        '<div class="card-title">'+esc(v.adresse)+'</div>'+
+        '<div style="display:flex;align-items:center;gap:8px;margin:.6rem 0;flex-wrap:wrap"><span style="font-size:13px;font-weight:700;color:var(--blue)">'+fmt(v.prix)+'</span><span style="font-size:12px;color:var(--pink);font-weight:600">Comm. '+fmt(v.commission)+'</span><span style="font-size:12px;color:var(--muted)">'+dateLabel+'</span></div>'+
+        '<div style="display:flex;align-items:center;gap:4px;overflow-x:auto;padding-bottom:4px">'+stepsHtml+'</div>'+
+        (v.notes?'<div style="font-size:12px;color:var(--muted);margin-top:8px">'+esc(v.notes)+'</div>':'')+
+        '<div class="card-footer"><span></span><div class="card-actions"><button class="act-btn" onclick="changeStage(\'vente\',\''+v.id+'\')">Étape</button><button class="act-btn" onclick="editVente(\''+v.id+'\')">Modifier</button><button class="act-btn danger" onclick="delVente(\''+v.id+'\')">Suppr.</button></div></div></div>';
+    }).join('');
+  };
+
+  ready(init);
+})();
+</script>
 </body>
 </html>
